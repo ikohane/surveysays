@@ -3,6 +3,8 @@
 **Author:** Isaac Kohane  
 **License:** MIT (see `LICENSE`)
 
+SurveySays is a local-first survey authoring and delivery system: you compile questionnaire content locally (from CSVs/templates) into a safe JSON format, manage campaigns and recipients in a local Admin UI, and then deliver surveys by emailing a link where the respondent’s browser retrieves (or is assigned) the questionnaire and submits results back to the study operator. A key mode—recommended by collaborator **Payal Chandak**—is **just-in-time questionnaire configuration on link-open**: when the recipient opens the email link, the system assigns the question set at that moment and snapshots it for reproducibility.
+
 This repo currently contains:
 
 - **`qgen/`**: a local questionnaire generator that produces per-recipient questionnaire JSON variants
@@ -50,10 +52,17 @@ If you set a campaign’s picker strategy to **`online_assign`**:
 - Clicking **Prepare** creates:
   - **Invitations** (one per recipient, each with a stable token)
   - A **question bank** (from `cases.csv`)
-- Opening a respondent link **`/s/<token>`** performs **first-open assignment** and **snapshots** the resulting `questionnaire_json` onto that invitation (subsequent opens are idempotent).
+- Opening a respondent link **`/s/<token>`** performs **just-in-time questionnaire configuration**: it assigns **K** question items at first open, builds the questionnaire JSON, and **snapshots** the resulting `questionnaire_json` onto that invitation (subsequent opens are idempotent).
 - Export tokens via **Download invitations JSON** (endpoint: `"/campaigns/<campaign_key>/export_invitations.json"`).
 
 This “assignment on first link-open” mode was added to satisfy a collaborator specification from **Payal Chandak**.
+
+## Next steps (Cloudflare + Resend)
+
+From the project plan (`.cursor/plans/qgen-local-admin.plan.md`), the next parallel steps to take once local authoring is stable:
+
+- **Cloudflare**: add the `hvp.global` zone; plan `study.hvp.global` hosting (Cloudflare Pages + Cloudflare Access for Admin UI).
+- **Resend**: verify domain + sender for deliverability so the system can email invitations at scale.
 
 ## Run qGen directly (CLI)
 
