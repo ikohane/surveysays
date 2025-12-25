@@ -9,6 +9,7 @@ This repo currently contains:
 
 - **`qgen/`**: a local questionnaire generator that produces per-recipient questionnaire JSON variants
 - **`admin_app/`**: a local Admin web app (Flask + SQLite) to import CSVs, manage campaigns, generate variants, preview, and export bulk payloads for later Cloudflare upload
+- **Database docs**: see [`docs/database/README.md`](docs/database/README.md) for schema and rationale
 
 ## Requirements
 
