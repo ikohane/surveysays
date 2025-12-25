@@ -1,0 +1,5 @@
+template_id,vignette_template,prompt_template,choice_A,choice_B,choice_C,choice_D,tags,rules_yaml
+t_001,"A {age}-year-old with {symptom} for {duration} days.","What is the best next step for a patient with {symptom}?","Order {test}","Start {treatment}","Reassure and discharge","Refer to specialist","template|demo","variables:\n  age: {pool: age, method: cycle}\n  symptom: {pool: symptom, method: cycle}\n  duration: {pool: duration, method: cycle}\n  test: {pool: test, method: cycle}\n  treatment: {pool: treatment, method: cycle}\n"
+t_002,"Patient presents after {event} with {finding}.","Which option is most appropriate?","Give {drug}","Order imaging","Observe","Discharge","template|demo","variables:\n  event: {pool: event, method: cycle}\n  finding: {pool: finding, method: cycle}\n  drug: {pool: drug, method: cycle}\n"
+
+

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <div class="actions" style="justify-content: space-between;">
+      <div>
+        <h2 style="margin: 0;">Invitations</h2>
+        <div class="muted">Campaign: {{ campaign['campaign_key'] }} · Strategy: {{ campaign['picker_strategy'] }}</div>
+      </div>
+      <div class="actions">
+        <a href="{{ url_for('campaign_detail', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Back</button></a>
+        <a href="{{ url_for('export_invitations_json', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Download invitations JSON</button></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Rows</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Token</th>
+          <th>Opened</th>
+          <th>Assigned hash</th>
+          <th>Link-open URL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in invitations %}
+          <tr>
+            <td><code>{{ r['email'] }}</code></td>
+            <td><code style="font-size: 12px;">{{ r['token'] }}</code></td>
+            <td>{{ r['opened_at'] or '' }}</td>
+            <td><code style="font-size: 12px;">{{ r['questionnaire_hash'] or '' }}</code></td>
+            <td><a href="{{ url_for('respondent_open', token=r['token']) }}"><code>/s/{{ r['token'] }}</code></a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if invitations|length == 0 %}
+      <div class="muted">No invitations yet. Click “Prepare” on the campaign page.</div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+

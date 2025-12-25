@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <div class="actions" style="justify-content: space-between;">
+      <div>
+        <h2 style="margin:0 0 6px 0;">Hash Detail</h2>
+        <div class="muted">Campaign: {{ campaign['campaign_key'] }}</div>
+      </div>
+      <div class="actions">
+        <a href="{{ url_for('stats', campaign_key=campaign['campaign_key']) }}">
+          <button class="secondary" type="button">Back to Stats</button>
+        </a>
+        <a href="{{ url_for('campaign_detail', campaign_key=campaign['campaign_key']) }}">
+          <button class="secondary" type="button">Back to Campaign</button>
+        </a>
+      </div>
+    </div>
+
+    <div style="height: 10px;"></div>
+    <div style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;">
+      {{ questionnaire_hash }}
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Recipients with this hash</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>email</th>
+          <th>case_id</th>
+          <th>created_at</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{{ r['email'] }}</td>
+            <td>{{ r['case_id'] }}</td>
+            <td class="muted">{{ r['created_at'] }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Questionnaire JSON (example)</h3>
+    <pre>{{ questionnaire_json | tojson(indent=2) }}</pre>
+  </div>
+{% endblock %}
+
+

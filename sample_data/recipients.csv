@@ -1,0 +1,8 @@
+email,site,role
+alice@example.com,SiteA,attending
+bob@example.com,SiteA,resident
+carol@example.com,SiteB,attending
+dave@example.com,SiteB,resident
+erin@example.com,SiteC,attending
+
+

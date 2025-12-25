@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <div class="row">
+      <div>
+        <h2 style="margin: 0 0 6px 0;">Imports</h2>
+        <div class="muted">DB: {{ db_path }}</div>
+        <div class="muted">Templates in DB: {{ templates_count }}</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top: 12px;">
+      <form class="card" style="margin:0;" action="{{ url_for('import_cases') }}" method="post" enctype="multipart/form-data">
+        <h3 style="margin-top:0;">Import cases.csv</h3>
+        <label>CSV File</label>
+        <input type="file" name="file" accept=".csv,text/csv" required />
+        <div style="height: 10px;"></div>
+        <button type="submit">Import Cases</button>
+        <div class="muted" style="margin-top:8px;">Required columns: case_id, vignette, prompt + choices (choices_json or choice_* columns)</div>
+      </form>
+      <form class="card" style="margin:0;" action="{{ url_for('import_recipients') }}" method="post" enctype="multipart/form-data">
+        <h3 style="margin-top:0;">Import recipients.csv</h3>
+        <label>CSV File</label>
+        <input type="file" name="file" accept=".csv,text/csv" required />
+        <div style="height: 10px;"></div>
+        <button type="submit">Import Recipients</button>
+        <div class="muted" style="margin-top:8px;">Required column: email. Other columns become strata.</div>
+      </form>
+      <form class="card" style="margin:0;" action="{{ url_for('import_templates') }}" method="post" enctype="multipart/form-data">
+        <h3 style="margin-top:0;">Import templates.csv</h3>
+        <label>CSV File</label>
+        <input type="file" name="file" accept=".csv,text/csv" required />
+        <div style="height: 10px;"></div>
+        <button type="submit">Import Templates</button>
+        <div class="muted" style="margin-top:8px;">Required columns: template_id, vignette_template, prompt_template + choices (choices_json or choice_* columns). Optional: rules_yaml.</div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin: 0 0 10px 0;">Campaigns</h2>
+    <form action="{{ url_for('campaigns_upsert') }}" method="post" class="card" style="margin: 0 0 14px 0;">
+      <h3 style="margin-top:0;">Create / Update Campaign</h3>
+      <div class="row">
+        <div>
+          <label>campaign_key</label>
+          <input name="campaign_key" type="text" placeholder="e.g. study_2025_01" required />
+        </div>
+        <div>
+          <label>title</label>
+          <input name="title" type="text" placeholder="e.g. Clinical Case Decision Survey" required />
+        </div>
+      </div>
+      <div class="row" style="margin-top: 12px;">
+        <div>
+          <label>seed</label>
+          <input name="seed" type="number" value="1" required />
+        </div>
+        <div>
+          <label>questionnaire_version</label>
+          <input name="questionnaire_version" type="number" value="1" required />
+        </div>
+      </div>
+      <div class="row" style="margin-top: 12px;">
+        <div>
+          <label>picker_strategy</label>
+          <select name="picker_strategy" style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px;">
+            <option value="pick_k_cases">pick_k_cases (from cases.csv)</option>
+            <option value="template_expand">template_expand (from templates.csv + param_vector.json)</option>
+          </select>
+        </div>
+        <div>
+          <label>k (questions per recipient)</label>
+          <input name="k" type="number" value="1" min="1" required />
+        </div>
+      </div>
+      <div style="height: 12px;"></div>
+      <button type="submit">Save Campaign</button>
+    </form>
+
+    {% if campaigns %}
+      <table>
+        <thead>
+          <tr>
+            <th>campaign_key</th>
+            <th>title</th>
+            <th>seed</th>
+            <th>version</th>
+            <th>created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in campaigns %}
+            <tr>
+              <td><a href="{{ url_for('campaign_detail', campaign_key=c['campaign_key']) }}">{{ c['campaign_key'] }}</a></td>
+              <td>{{ c['title'] }}</td>
+              <td>{{ c['seed'] }}</td>
+              <td>{{ c['questionnaire_version'] }}</td>
+              <td class="muted">{{ c['created_at'] }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="muted">No campaigns yet.</div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+

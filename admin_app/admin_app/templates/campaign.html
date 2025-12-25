@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <div class="actions" style="justify-content: space-between;">
+      <div>
+        <h2 style="margin: 0;">Campaign: {{ campaign['campaign_key'] }}</h2>
+        <div class="muted">{{ campaign['title'] }}</div>
+      </div>
+      <div class="actions">
+        {% if campaign['picker_strategy'] == 'online_assign' %}
+          <a href="{{ url_for('campaign_invitations', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Invitations</button></a>
+          <a href="{{ url_for('online_stats', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Online stats</button></a>
+        {% else %}
+          <a href="{{ url_for('stats', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Stats</button></a>
+          <a href="{{ url_for('preview_first', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Preview</button></a>
+        {% endif %}
+      </div>
+    </div>
+    <div style="height: 10px;"></div>
+    <div class="row">
+      <div class="card" style="margin:0;">
+        <div><span class="pill">Imported cases</span></div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ cases_count }}</div>
+      </div>
+      <div class="card" style="margin:0;">
+        <div><span class="pill">Imported recipients</span></div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ recipients_count }}</div>
+      </div>
+      <div class="card" style="margin:0;">
+        <div><span class="pill">Imported templates</span></div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ templates_count }}</div>
+      </div>
+      <div class="card" style="margin:0;">
+        {% if campaign['picker_strategy'] == 'online_assign' %}
+          <div><span class="pill">Invitations (online)</span></div>
+          <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ inv_counts.total if inv_counts else 0 }}</div>
+          <div class="muted">
+            Opened: {{ inv_counts.opened if inv_counts else 0 }} · Assigned: {{ inv_counts.assigned if inv_counts else 0 }}
+          </div>
+        {% else %}
+          <div><span class="pill">Generated variants</span></div>
+          <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ counts.total }}</div>
+          <div class="muted">Distinct hashes: {{ counts.distinct_hashes }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Picker configuration</h3>
+    <div class="muted">
+      Strategy:
+      <strong>{{ campaign['picker_strategy'] if 'picker_strategy' in campaign.keys() else 'pick_k_cases' }}</strong>
+      · K:
+      <strong>{{ campaign['k'] if 'k' in campaign.keys() else 1 }}</strong>
+    </div>
+    <div style="height: 10px;"></div>
+    <form action="{{ url_for('update_campaign_settings', campaign_key=campaign['campaign_key']) }}" method="post" class="card" style="margin:0 0 12px 0;">
+      <h4 style="margin:0 0 10px 0;">Update picker settings</h4>
+      <div class="row">
+        <div>
+          <label>picker_strategy</label>
+          <select name="picker_strategy">
+            <option value="pick_k_cases" {% if campaign['picker_strategy'] == 'pick_k_cases' %}selected{% endif %}>pick_k_cases</option>
+            <option value="template_expand" {% if campaign['picker_strategy'] == 'template_expand' %}selected{% endif %}>template_expand</option>
+            <option value="online_assign" {% if campaign['picker_strategy'] == 'online_assign' %}selected{% endif %}>online_assign</option>
+          </select>
+        </div>
+        <div>
+          <label>k (questions per recipient)</label>
+          <input name="k" type="number" min="1" value="{{ campaign['k'] if 'k' in campaign.keys() else 1 }}" required />
+        </div>
+      </div>
+      <div style="height: 10px;"></div>
+      <button class="secondary" type="submit">Save picker settings</button>
+    </form>
+
+    <form action="{{ url_for('upload_param_vector', campaign_key=campaign['campaign_key']) }}" method="post" enctype="multipart/form-data">
+      <label>Upload param_vector.json (required for template_expand)</label>
+      <input type="file" name="file" accept=".json,application/json" />
+      <div style="height: 10px;"></div>
+      <button class="secondary" type="submit">Save param_vector.json</button>
+    </form>
+    {% set has_param_vector = ('param_vector_json' in campaign.keys()) and (campaign['param_vector_json']) %}
+    {% if has_param_vector %}
+      <div class="muted" style="margin-top: 8px;">param_vector.json is set for this campaign.</div>
+    {% else %}
+      <div class="muted" style="margin-top: 8px;">param_vector.json not set.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    {% if campaign['picker_strategy'] == 'online_assign' %}
+      <h3 style="margin-top:0;">Prepare online assignment</h3>
+      <div class="muted">Creates invitations + a question bank. Assignment happens on first open of <code>/s/&lt;token&gt;</code>.</div>
+    {% else %}
+      <h3 style="margin-top:0;">Generate per-recipient variants</h3>
+      <div class="muted">Generation is deterministic for the same inputs (seed={{ campaign['seed'] }}).</div>
+    {% endif %}
+    <div style="height: 10px;"></div>
+    <div class="actions">
+      <form action="{{ url_for('generate_variants', campaign_key=campaign['campaign_key']) }}" method="post">
+        <button type="submit">{% if campaign['picker_strategy'] == 'online_assign' %}Prepare{% else %}Generate{% endif %}</button>
+      </form>
+      {% if campaign['picker_strategy'] == 'online_assign' %}
+        <a href="{{ url_for('export_invitations_json', campaign_key=campaign['campaign_key']) }}">
+          <button class="secondary" type="button" {% if not inv_counts or inv_counts.total == 0 %}disabled{% endif %}>Download invitations JSON</button>
+        </a>
+      {% else %}
+        <a href="{{ url_for('export_bulk_json', campaign_key=campaign['campaign_key']) }}">
+          <button class="secondary" type="button" {% if counts.total == 0 %}disabled{% endif %}>Download bulk JSON</button>
+        </a>
+      {% endif %}
+    </div>
+    {% if campaign['picker_strategy'] == 'online_assign' %}
+      {% if not inv_counts or inv_counts.total == 0 %}
+        <div class="muted" style="margin-top: 8px;">Prepare first to create tokens and enable export.</div>
+      {% else %}
+        <div class="muted" style="margin-top: 8px;">Open a token link to trigger assignment and snapshotting.</div>
+      {% endif %}
+    {% else %}
+      {% if counts.total == 0 %}
+        <div class="muted" style="margin-top: 8px;">Generate first to enable export.</div>
+      {% endif %}
+    {% endif %}
+  </div>
+{% endblock %}
+
+

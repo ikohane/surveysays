@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <h2 style="margin:0 0 6px 0;">Stats</h2>
+    <div class="muted">Campaign: {{ campaign['campaign_key'] }}</div>
+    <div style="height: 10px;"></div>
+    <div class="row">
+      <div class="card" style="margin:0;">
+        <div><span class="pill">Total variants</span></div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ counts.total }}</div>
+      </div>
+      <div class="card" style="margin:0;">
+        <div><span class="pill">Distinct hashes</span></div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ counts.distinct_hashes }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Hashes</h3>
+    {% if top %}
+      <table>
+        <thead>
+          <tr>
+            <th>hash</th>
+            <th>count</th>
+            <th>example_email</th>
+            <th>example_case</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in top %}
+            <tr>
+              <td style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;">
+                <a href="{{ url_for('hash_detail', campaign_key=campaign['campaign_key'], questionnaire_hash=row['questionnaire_hash']) }}">
+                  {{ row['questionnaire_hash'] }}
+                </a>
+              </td>
+              <td>{{ row['n'] }}</td>
+              <td>{{ row['example_email'] }}</td>
+              <td>{{ row['example_case_id'] }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="muted">No generated variants yet.</div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+
