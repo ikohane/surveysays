@@ -39,8 +39,10 @@ def validate_questionnaire_json(obj: Any) -> QuestionnaireJson:
         if not isinstance(b, dict):
             raise ValidationError(f"questionnaireJson.blocks[{i}] must be an object")
         btype = b.get("type")
-        if btype not in ("vignette", "singleSelect"):
-            raise ValidationError(f"questionnaireJson.blocks[{i}].type must be 'vignette' or 'singleSelect'")
+        if btype not in ("vignette", "singleSelect", "freeText"):
+            raise ValidationError(
+                f"questionnaireJson.blocks[{i}].type must be 'vignette', 'singleSelect', or 'freeText'"
+            )
         bid = b.get("id")
         if not _is_nonempty_str(bid):
             raise ValidationError(f"questionnaireJson.blocks[{i}].id must be a non-empty string")
@@ -52,7 +54,7 @@ def validate_questionnaire_json(obj: Any) -> QuestionnaireJson:
             text = b.get("text")
             if not _is_nonempty_str(text):
                 raise ValidationError(f"questionnaireJson.blocks[{i}].text must be a non-empty string")
-        else:
+        elif btype == "singleSelect":
             prompt = b.get("prompt")
             if not _is_nonempty_str(prompt):
                 raise ValidationError(f"questionnaireJson.blocks[{i}].prompt must be a non-empty string")
@@ -77,6 +79,14 @@ def validate_questionnaire_json(obj: Any) -> QuestionnaireJson:
                 label = c.get("label")
                 if not _is_nonempty_str(label):
                     raise ValidationError(f"questionnaireJson.blocks[{i}].choices[{j}].label must be non-empty")
+        else:
+            # freeText (MVP): required, single-line.
+            prompt = b.get("prompt")
+            if not _is_nonempty_str(prompt):
+                raise ValidationError(f"questionnaireJson.blocks[{i}].prompt must be a non-empty string")
+            required = b.get("required")
+            if required is not True:
+                raise ValidationError(f"questionnaireJson.blocks[{i}].required must be true for MVP")
 
     return obj  # type: ignore[return-value]
 

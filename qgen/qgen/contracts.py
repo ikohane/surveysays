@@ -9,7 +9,7 @@ from typing import Any, Literal, TypedDict
 # -------------------------
 
 
-BlockType = Literal["vignette", "singleSelect"]
+BlockType = Literal["vignette", "singleSelect", "freeText"]
 
 
 class Choice(TypedDict):
@@ -31,12 +31,24 @@ class SingleSelectQuestion(TypedDict):
     choices: list[Choice]
 
 
+class FreeTextQuestion(TypedDict):
+    """
+    MVP: required, single-line free text response.
+    (No constraints yet: no min/max length, no regex, no multiline flag.)
+    """
+
+    type: Literal["freeText"]
+    id: str
+    prompt: str
+    required: bool
+
+
 QuestionnaireJson = TypedDict(
     "QuestionnaireJson",
     {
         "title": str,
         "questionnaireVersion": int,
-        "blocks": list[VignetteBlock | SingleSelectQuestion],
+        "blocks": list[VignetteBlock | SingleSelectQuestion | FreeTextQuestion],
     },
 )
 

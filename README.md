@@ -177,4 +177,12 @@ The exported/downloaded JSON looks like:
 }
 ```
 
+## Questionnaire JSON blocks (MVP)
+
+Blocks are rendered in order. Current supported block types:
+
+- **`vignette`**: `{ type: "vignette", id, text }`
+- **`singleSelect`**: `{ type: "singleSelect", id, prompt, required: true, choices: [{id,label}, ...] }`
+- **`freeText` (MVP)**: `{ type: "freeText", id, prompt, required: true }` (short, single-line)
+
 

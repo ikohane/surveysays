@@ -35,6 +35,14 @@
             {% endfor %}
           </form>
         </div>
+      {% elif b['type'] == 'freeText' %}
+        <div class="card" style="margin: 0;">
+          <div class="pill">Free Text</div>
+          <div style="height: 6px;"></div>
+          <div style="font-weight: 700;">{{ b['prompt'] }}</div>
+          <div style="height: 10px;"></div>
+          <input type="text" placeholder="Type your answer..." />
+        </div>
       {% endif %}
     {% endfor %}
   </div>

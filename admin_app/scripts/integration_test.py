@@ -31,6 +31,7 @@ def main() -> None:
     os.environ["ADMIN_APP_SECRET"] = "integration-test-secret"
 
     from admin_app.admin_app.app import create_app  # noqa: E402
+    from qgen.validation import validate_questionnaire_json  # noqa: E402
 
     app = create_app()
     client = app.test_client()
@@ -205,6 +206,31 @@ def main() -> None:
     ).fetchone()["s"]
     assert int(sum_assigned_2) == 2
     conn.close()
+
+    # 6) freeText block (contract + rendering)
+    q_free = {
+        "title": "FreeText Test",
+        "questionnaireVersion": 1,
+        "blocks": [
+            {"type": "vignette", "id": "v1", "text": "Case vignette"},
+            {"type": "freeText", "id": "ft1", "prompt": "In one sentence, what would you do?", "required": True},
+            {
+                "type": "singleSelect",
+                "id": "ss1",
+                "prompt": "Choose one",
+                "required": True,
+                "choices": [{"id": "A", "label": "A"}, {"id": "B", "label": "B"}],
+            },
+        ],
+    }
+    validate_questionnaire_json(q_free)
+    with app.test_request_context("/"):
+        html = app.jinja_env.get_template("preview.html").render(
+            campaign={"campaign_key": "it_freeText"},
+            email="freeText@example.com",
+            qjson=q_free,
+        )
+        assert "Free Text" in html
 
     print("Integration test passed.")
 
