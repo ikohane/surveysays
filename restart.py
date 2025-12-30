@@ -119,6 +119,10 @@ def main() -> int:
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parent
+    out_dir = repo_root / "out"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    log_path = out_dir / "server.log"
+    pid_path = out_dir / "server.pid"
 
     # 1) Kill anything listening on the configured port
     pids_port = _list_listeners_on_port(args.port)
@@ -144,7 +148,21 @@ def main() -> int:
     if args.db:
         env["ADMIN_APP_DB"] = args.db
 
-    cmd = [sys.executable, "-m", "admin_app.admin_app.app"]
+    # IMPORTANT: Do NOT start via admin_app.admin_app.app's _main(), because it uses debug=True
+    # which enables the Werkzeug reloader (multiple processes) and is flaky for "restart" scripts.
+    # Instead, start a single-process server with debug/reloader disabled.
+    cmd = [
+        sys.executable,
+        "-c",
+        (
+            "import os;"
+            "from admin_app.admin_app.app import create_app;"
+            "app=create_app();"
+            "host=os.environ.get('HOST','127.0.0.1');"
+            "port=int(os.environ.get('PORT','5055'));"
+            "app.run(host=host, port=port, debug=False, use_reloader=False)"
+        ),
+    ]
     print("Starting server:")
     print("  " + " ".join(shlex.quote(c) for c in cmd))
     print(f"  HOST={env['HOST']} PORT={env['PORT']}")
@@ -152,8 +170,29 @@ def main() -> int:
         print(f"  ADMIN_APP_DB={env['ADMIN_APP_DB']}")
 
     if args.background:
-        p = subprocess.Popen(cmd, env=env, cwd=str(repo_root), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        print(f"Server started in background (pid={p.pid}).")
+        env["PYTHONUNBUFFERED"] = "1"
+        with log_path.open("ab") as logf:
+            p = subprocess.Popen(cmd, env=env, cwd=str(repo_root), stdout=logf, stderr=logf)
+        pid_path.write_text(str(p.pid), encoding="utf-8")
+
+        # Health check: wait briefly for port bind
+        time.sleep(0.6)
+        listeners = _list_listeners_on_port(args.port)
+        if not listeners:
+            tail = ""
+            try:
+                tail = log_path.read_text(encoding="utf-8", errors="replace").splitlines()[-60:]
+                tail = "\n".join(tail)
+            except Exception:
+                pass
+            print("Server failed to bind to port. Last log lines:\n" + (tail or "(no log output)"))
+            try:
+                os.kill(p.pid, signal.SIGTERM)
+            except Exception:
+                pass
+            return 1
+
+        print(f"Server started in background (pid={p.pid}). Logs: {log_path}")
         return 0
 
     # Foreground: inherit stdio
