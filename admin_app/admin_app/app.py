@@ -31,6 +31,7 @@ from .db import (
     list_campaigns,
     list_assignments_for_token,
     list_invitations_for_campaign,
+    list_recent_submissions,
     list_question_items_with_stats,
     load_cases,
     load_recipients,
@@ -670,7 +671,8 @@ def create_app() -> Flask:
                 """,
                 (campaign_id,),
             ).fetchone()
-            submit_counts = submission_cohort_counts(conn, campaign_id=campaign_id) if campaign["picker_strategy"] == "online_assign" else None
+            cohort_counts = submission_cohort_counts(conn, campaign_id=campaign_id)
+            recent_submissions = list_recent_submissions(conn, campaign_id=campaign_id, limit=20)
 
         return render_template(
             "master.html",
@@ -680,7 +682,8 @@ def create_app() -> Flask:
             templates_n=int(templates_n),
             variants_counts=variants_counts,
             inv_counts=inv_counts,
-            submit_counts=submit_counts,
+            cohort_counts=cohort_counts,
+            recent_submissions=recent_submissions,
         )
 
     @app.post("/campaigns/<campaign_key>/email-settings")

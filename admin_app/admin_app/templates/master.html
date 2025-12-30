@@ -45,12 +45,63 @@
       </div>
     </div>
 
-    {% if submit_counts %}
-      <div style="height: 10px;"></div>
-      <div class="muted">
-        Submitted: <strong>{{ submit_counts.submitted }}</strong> ·
-        Invited-not-submitted: <strong>{{ submit_counts.invited - submit_counts.submitted }}</strong>
-      </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Invited / opened / assigned / submitted</h3>
+    <div class="muted">This is computed from `invitations` + `submissions` for this campaign.</div>
+    <div style="height: 10px;"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Invited</th>
+          <th>Opened</th>
+          <th>Assigned</th>
+          <th>Submitted</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:700;">{{ cohort_counts.invited }}</td>
+          <td style="font-weight:700;">{{ cohort_counts.opened }}</td>
+          <td style="font-weight:700;">{{ cohort_counts.assigned }}</td>
+          <td style="font-weight:700;">{{ cohort_counts.submitted }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="muted" style="margin-top: 8px;">
+      Invited-not-submitted: <strong>{{ cohort_counts.invited - cohort_counts.submitted }}</strong>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Recent submissions</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Submitted at</th>
+          <th>Email</th>
+          <th>Token</th>
+          <th>Opened</th>
+          <th>Hash</th>
+          <th>Link</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in recent_submissions %}
+          <tr>
+            <td>{{ r['submitted_at'] }}</td>
+            <td><code>{{ r['email'] }}</code></td>
+            <td><code style="font-size:12px;">{{ r['token'][:8] }}…</code></td>
+            <td>{{ r['opened_at'] or '' }}</td>
+            <td><code style="font-size:12px;">{{ (r['questionnaire_hash'] or '')[:10] }}{% if r['questionnaire_hash'] %}…{% endif %}</code></td>
+            <td><a href="{{ url_for('respondent_open', token=r['token']) }}"><code>/s/{{ r['token'][:8] }}…</code></a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if recent_submissions|length == 0 %}
+      <div class="muted">No submissions yet for this campaign.</div>
     {% endif %}
   </div>
 

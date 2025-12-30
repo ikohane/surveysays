@@ -819,6 +819,27 @@ def submission_cohort_counts(conn: sqlite3.Connection, *, campaign_id: int) -> d
     }
 
 
+def list_recent_submissions(conn: sqlite3.Connection, *, campaign_id: int, limit: int = 25) -> list[sqlite3.Row]:
+    return list(
+        conn.execute(
+            """
+            SELECT
+              s.submitted_at,
+              i.email,
+              i.token,
+              i.opened_at,
+              i.questionnaire_hash
+            FROM submissions s
+            JOIN invitations i ON i.campaign_id = s.campaign_id AND i.token = s.token
+            WHERE s.campaign_id = ?
+            ORDER BY s.submitted_at DESC
+            LIMIT ?
+            """,
+            (campaign_id, limit),
+        ).fetchall()
+    )
+
+
 def report_rows(
     conn: sqlite3.Connection,
     *,
