@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <div class="actions" style="justify-content: space-between;">
+      <div>
+        <h2 style="margin: 0;">Master view</h2>
+        <div class="muted">Campaign: {{ campaign['campaign_key'] }} · Strategy: {{ campaign['picker_strategy'] }} · K={{ campaign['k'] }}</div>
+      </div>
+      <div class="actions">
+        <a href="{{ url_for('campaign_detail', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Campaign</button></a>
+        {% if campaign['picker_strategy'] == 'online_assign' %}
+          <a href="{{ url_for('campaign_invitations', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Invitations</button></a>
+          <a href="{{ url_for('online_stats', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Online stats</button></a>
+          <a href="{{ url_for('reports', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Reports</button></a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Status</h3>
+    <div class="row">
+      <div class="card" style="margin:0;">
+        <div><span class="pill">Cases</span></div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ cases_n }}</div>
+      </div>
+      <div class="card" style="margin:0;">
+        <div><span class="pill">Recipients</span></div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ recipients_n }}</div>
+      </div>
+      <div class="card" style="margin:0;">
+        <div><span class="pill">Templates</span></div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ templates_n }}</div>
+      </div>
+      <div class="card" style="margin:0;">
+        {% if campaign['picker_strategy'] == 'online_assign' %}
+          <div><span class="pill">Invitations</span></div>
+          <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ inv_counts.total if inv_counts else 0 }}</div>
+          <div class="muted">Opened: {{ inv_counts.opened if inv_counts else 0 }} · Assigned: {{ inv_counts.assigned if inv_counts else 0 }}</div>
+        {% else %}
+          <div><span class="pill">Generated variants</span></div>
+          <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ variants_counts.total }}</div>
+          <div class="muted">Distinct hashes: {{ variants_counts.distinct_hashes }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if submit_counts %}
+      <div style="height: 10px;"></div>
+      <div class="muted">
+        Submitted: <strong>{{ submit_counts.submitted }}</strong> ·
+        Invited-not-submitted: <strong>{{ submit_counts.invited - submit_counts.submitted }}</strong>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Actions</h3>
+    <div class="muted">These buttons reuse the same endpoints we’ll later map to Cloudflare/Resend deployment.</div>
+    <div style="height: 12px;"></div>
+
+    <div class="row">
+      <div class="card" style="margin:0;">
+        <h4 style="margin-top:0;">Imports</h4>
+        <form action="{{ url_for('import_cases') }}" method="post" enctype="multipart/form-data">
+          <label>cases.csv</label>
+          <input type="file" name="file" accept=".csv,text/csv" />
+          <div style="height: 8px;"></div>
+          <button class="secondary" type="submit">Import cases</button>
+        </form>
+        <div style="height: 10px;"></div>
+        <form action="{{ url_for('import_recipients') }}" method="post" enctype="multipart/form-data">
+          <label>recipients.csv</label>
+          <input type="file" name="file" accept=".csv,text/csv" />
+          <div style="height: 8px;"></div>
+          <button class="secondary" type="submit">Import recipients</button>
+        </form>
+        <div style="height: 10px;"></div>
+        <form action="{{ url_for('import_templates') }}" method="post" enctype="multipart/form-data">
+          <label>templates.csv</label>
+          <input type="file" name="file" accept=".csv,text/csv" />
+          <div style="height: 8px;"></div>
+          <button class="secondary" type="submit">Import templates</button>
+        </form>
+      </div>
+
+      <div class="card" style="margin:0;">
+        <h4 style="margin-top:0;">Generate / Prepare</h4>
+        <form action="{{ url_for('generate_variants', campaign_key=campaign['campaign_key']) }}" method="post">
+          <button type="submit">{% if campaign['picker_strategy'] == 'online_assign' %}Prepare online_assign{% else %}Generate variants{% endif %}</button>
+        </form>
+        <div style="height: 10px;"></div>
+        {% if campaign['picker_strategy'] == 'online_assign' %}
+          <a href="{{ url_for('export_invitations_json', campaign_key=campaign['campaign_key']) }}">
+            <button class="secondary" type="button">Download invitations tokens JSON</button>
+          </a>
+        {% else %}
+          <a href="{{ url_for('export_bulk_json', campaign_key=campaign['campaign_key']) }}">
+            <button class="secondary" type="button">Download bulk variants JSON</button>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Email (Resend) settings</h3>
+    <div class="muted">
+      Safety: during MVP testing, sends will be forced to <code>kohane@gmail.com</code>. The intended recipient is still available via <code>{{{RECIPIENT_EMAIL}}}</code>.
+    </div>
+    {% if campaign['email_template_id'] %}
+      <div class="muted" style="margin-top: 6px;">Resend template id: <code>{{ campaign['email_template_id'] }}</code></div>
+    {% endif %}
+    <div style="height: 10px;"></div>
+    <form action="{{ url_for('update_email_settings', campaign_key=campaign['campaign_key']) }}" method="post">
+      <div class="row">
+        <div>
+          <label>email_from</label>
+          <input type="text" name="email_from" value="{{ campaign['email_from'] or '' }}" placeholder="Name <sender@domain>" />
+        </div>
+        <div>
+          <label>email_subject</label>
+          <input type="text" name="email_subject" value="{{ campaign['email_subject'] or '' }}" placeholder="Subject line" />
+        </div>
+      </div>
+      <div style="height: 10px;"></div>
+      <div class="row">
+        <div>
+          <label>email_base_url</label>
+          <input type="text" name="email_base_url" value="{{ campaign['email_base_url'] or 'http://127.0.0.1:5055' }}" />
+          <div class="muted" style="margin-top: 6px;">Links will be <code>{{ campaign['email_base_url'] or 'http://127.0.0.1:5055' }}/s/&lt;token&gt;</code></div>
+        </div>
+      </div>
+      <div style="height: 10px;"></div>
+      <label>email_html (Resend template body)</label>
+      <div class="muted">Allowed variables: <code>{{{SURVEY_LINK}}}</code>, <code>{{{CAMPAIGN_TITLE}}}</code>, <code>{{{RECIPIENT_EMAIL}}}</code></div>
+      <div style="height: 8px;"></div>
+      <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ campaign['email_html'] or '' }}</textarea>
+      <div style="height: 10px;"></div>
+      <button class="secondary" type="submit">Save email settings</button>
+    </form>
+    <div style="height: 10px;"></div>
+    <form action="{{ url_for('send_emails', campaign_key=campaign['campaign_key']) }}" method="post">
+      <button type="submit">Send invitation emails (forced to kohane@gmail.com)</button>
+    </form>
+  </div>
+{% endblock %}
+
+

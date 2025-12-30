@@ -22,7 +22,11 @@ from .db import (
     get_campaign_by_key,
     get_invitation_by_token,
     get_question_item,
+    has_submission,
     increment_assigned_count,
+    increment_submitted_count,
+    insert_submission,
+    insert_submission_answer,
     insert_variants,
     list_campaigns,
     list_assignments_for_token,
@@ -32,8 +36,10 @@ from .db import (
     load_recipients,
     load_templates,
     mark_invitation_opened,
+    report_rows,
     save_invitation_snapshot,
     insert_assignment,
+    submission_cohort_counts,
     upsert_campaign,
     upsert_cases,
     upsert_recipients,
@@ -41,6 +47,8 @@ from .db import (
     upsert_question_items_from_cases,
     variant_counts,
 )
+
+from .resend_client import ResendError, create_or_update_campaign_template, send_invites_for_campaign
 
 
 def create_app() -> Flask:
@@ -434,6 +442,166 @@ def create_app() -> Flask:
             status=200,
         )
 
+    def _validate_answers_against_snapshot(*, qjson: dict[str, Any], answers: dict[str, str]) -> None:
+        """
+        Enforces MVP response contract:
+        - answers map keys are block ids
+        - required answerable blocks (singleSelect, freeText) must be present
+        - no unknown block ids
+        - singleSelect values must be a valid choice id
+        """
+        blocks = qjson.get("blocks")
+        if not isinstance(blocks, list):
+            raise ValueError("Invalid questionnaire snapshot (blocks missing)")
+
+        answerable: dict[str, dict[str, Any]] = {}
+        required_ids: set[str] = set()
+        for b in blocks:
+            if not isinstance(b, dict):
+                continue
+            btype = b.get("type")
+            bid = b.get("id")
+            if not isinstance(bid, str) or not bid:
+                continue
+            if btype in ("singleSelect", "freeText"):
+                answerable[bid] = b
+                if b.get("required") is True:
+                    required_ids.add(bid)
+
+        # unknown keys
+        for k in answers.keys():
+            if k not in answerable:
+                raise ValueError(f"Answer provided for unknown or non-answerable block id '{k}'")
+
+        # missing required
+        missing = sorted([rid for rid in required_ids if rid not in answers or not str(answers.get(rid, "")).strip()])
+        if missing:
+            raise ValueError(f"Missing answers for required blocks: {', '.join(missing)}")
+
+        # validate values
+        for bid, val in answers.items():
+            b = answerable[bid]
+            btype = b.get("type")
+            if btype == "freeText":
+                if not str(val).strip():
+                    raise ValueError(f"freeText '{bid}' must be non-empty")
+            elif btype == "singleSelect":
+                choices = b.get("choices")
+                if not isinstance(choices, list) or not choices:
+                    raise ValueError(f"singleSelect '{bid}' has no choices in snapshot")
+                allowed = {c.get("id") for c in choices if isinstance(c, dict)}
+                if val not in allowed:
+                    raise ValueError(f"singleSelect '{bid}' invalid choice '{val}'")
+            else:
+                raise ValueError(f"Unsupported answerable block type '{btype}'")
+
+    @app.post("/s/<token>/submit")
+    def respondent_submit(token: str) -> Response:
+        """
+        Final submission endpoint (one-and-done):
+        - First submit stores answers and returns 200
+        - Repeat submit returns 409
+        """
+        # Collect answers from form POST (MVP UI). Keys are block ids.
+        answers: dict[str, str] = {}
+        for k, v in request.form.items():
+            if k.startswith("ans__"):
+                bid = k[len("ans__") :]
+                answers[bid] = str(v)
+
+        with db.connect() as conn:
+            inv = get_invitation_by_token(conn, token=token)
+            if inv is None:
+                return Response("Invalid token", status=404)
+            campaign = conn.execute("SELECT * FROM campaigns WHERE id = ?", (int(inv["campaign_id"]),)).fetchone()
+            if campaign is None:
+                return Response("Campaign not found", status=404)
+            if campaign["picker_strategy"] != "online_assign":
+                return Response("This invitation is not for an online_assign campaign", status=400)
+
+            if has_submission(conn, token=token):
+                return Response("Already submitted", status=409)
+
+            if not inv["questionnaire_json"]:
+                return Response("Not assigned yet. Open the survey link first.", status=400)
+
+            qjson = json.loads(inv["questionnaire_json"])
+            try:
+                _validate_answers_against_snapshot(qjson=qjson, answers=answers)
+            except Exception as e:
+                flash(f"Submit validation error: {e}", "error")
+                return redirect(url_for("respondent_open", token=token))
+
+            campaign_id = int(inv["campaign_id"])
+            email = str(inv["email"])
+
+            insert_submission(conn, campaign_id=campaign_id, token=token, email=email, answers=answers)
+
+            # Normalize answers for analytics
+            blocks = qjson.get("blocks") if isinstance(qjson, dict) else []
+            block_by_id: dict[str, dict[str, Any]] = {}
+            if isinstance(blocks, list):
+                for b in blocks:
+                    if isinstance(b, dict) and isinstance(b.get("id"), str):
+                        block_by_id[b["id"]] = b
+
+            for bid, val in answers.items():
+                b = block_by_id.get(bid) or {}
+                btype = str(b.get("type") or "")
+                value_text: str | None = None
+                value_choice_id: str | None = None
+                if btype == "freeText":
+                    value_text = str(val)
+                elif btype == "singleSelect":
+                    value_choice_id = str(val)
+                    # Increment submitted_count for the underlying question_item when possible (online_assign only)
+                    # We stored item_id in QuestionUnit metadata but not in blocks; instead, use respondent_assignments.
+                insert_submission_answer(
+                    conn,
+                    campaign_id=campaign_id,
+                    token=token,
+                    block_id=bid,
+                    block_type=btype,
+                    value_text=value_text,
+                    value_choice_id=value_choice_id,
+                )
+
+            # Increment submitted_count for each assigned item (online bank items)
+            assigned = list_assignments_for_token(conn, campaign_id=campaign_id, token=token)
+            for a in assigned:
+                increment_submitted_count(conn, campaign_id=campaign_id, item_id=str(a["item_id"]))
+
+            conn.commit()
+
+        flash("Submitted. Thank you!", "success")
+        return redirect(url_for("respondent_open", token=token))
+
+    @app.get("/campaigns/<campaign_key>/reports")
+    def reports(campaign_key: str) -> str:
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            if campaign["picker_strategy"] != "online_assign":
+                flash("Reports are currently implemented for online_assign campaigns.", "error")
+                return redirect(url_for("campaign_detail", campaign_key=campaign_key))
+            campaign_id = int(campaign["id"])
+            counts = submission_cohort_counts(conn, campaign_id=campaign_id)
+            invited_ns = report_rows(conn, campaign_id=campaign_id, kind="invited_not_submitted")
+            opened_ns = report_rows(conn, campaign_id=campaign_id, kind="opened_not_submitted")
+            assigned_ns = report_rows(conn, campaign_id=campaign_id, kind="assigned_not_submitted")
+            submitted = report_rows(conn, campaign_id=campaign_id, kind="submitted")
+        return render_template(
+            "reports.html",
+            campaign=campaign,
+            counts=counts,
+            invited_not_submitted=invited_ns,
+            opened_not_submitted=opened_ns,
+            assigned_not_submitted=assigned_ns,
+            submitted=submitted,
+        )
+
     @app.get("/campaigns/<campaign_key>/invitations")
     def campaign_invitations(campaign_key: str) -> str:
         with db.connect() as conn:
@@ -469,6 +637,133 @@ def create_app() -> Flask:
             ).fetchone()
             items = list_question_items_with_stats(conn, campaign_id=campaign_id)
         return render_template("online_stats.html", campaign=campaign, inv_counts=inv_counts, items=items)
+
+    @app.get("/campaigns/<campaign_key>/master")
+    def master_view(campaign_key: str) -> str:
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+
+            campaign_id = int(campaign["id"])
+            cases_n = conn.execute("SELECT COUNT(*) AS n FROM cases").fetchone()["n"]
+            recipients_n = conn.execute("SELECT COUNT(*) AS n FROM recipients").fetchone()["n"]
+            templates_n = conn.execute("SELECT COUNT(*) AS n FROM templates").fetchone()["n"]
+            variants_counts = variant_counts(conn, campaign_id=campaign_id)
+            inv_counts = conn.execute(
+                """
+                SELECT
+                  COUNT(*) AS total,
+                  SUM(CASE WHEN opened_at IS NOT NULL THEN 1 ELSE 0 END) AS opened,
+                  SUM(CASE WHEN questionnaire_hash IS NOT NULL THEN 1 ELSE 0 END) AS assigned
+                FROM invitations
+                WHERE campaign_id = ?
+                """,
+                (campaign_id,),
+            ).fetchone()
+            submit_counts = submission_cohort_counts(conn, campaign_id=campaign_id) if campaign["picker_strategy"] == "online_assign" else None
+
+        return render_template(
+            "master.html",
+            campaign=campaign,
+            cases_n=int(cases_n),
+            recipients_n=int(recipients_n),
+            templates_n=int(templates_n),
+            variants_counts=variants_counts,
+            inv_counts=inv_counts,
+            submit_counts=submit_counts,
+        )
+
+    @app.post("/campaigns/<campaign_key>/email-settings")
+    def update_email_settings(campaign_key: str) -> Response:
+        email_from = (request.form.get("email_from") or "").strip()
+        email_subject = (request.form.get("email_subject") or "").strip()
+        email_base_url = (request.form.get("email_base_url") or "").strip()
+        email_html = request.form.get("email_html") or ""
+
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            conn.execute(
+                """
+                UPDATE campaigns
+                SET email_from = ?, email_subject = ?, email_base_url = ?, email_html = ?
+                WHERE campaign_key = ?
+                """,
+                (email_from, email_subject, email_base_url, email_html, campaign_key),
+            )
+            conn.commit()
+
+        flash("Saved email settings", "success")
+        return redirect(url_for("master_view", campaign_key=campaign_key))
+
+    @app.post("/campaigns/<campaign_key>/send-emails")
+    def send_emails(campaign_key: str) -> Response:
+        """
+        Sends invitation emails for online_assign campaigns using a per-campaign Resend template.
+        HARD SAFETY: all outbound emails are forced to kohane@gmail.com (see resend_client.FORCED_TEST_TO_EMAIL).
+        """
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            if campaign["picker_strategy"] != "online_assign":
+                flash("Send emails is currently only implemented for online_assign campaigns.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+
+            # Ensure invitations exist
+            inv_rows = list_invitations_for_campaign(conn, campaign_id=int(campaign["id"]))
+            if not inv_rows:
+                flash("No invitations yet. Click Prepare first.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+
+            email_from = (campaign["email_from"] or "").strip()
+            email_subject = (campaign["email_subject"] or "").strip()
+            email_html = (campaign["email_html"] or "").strip()
+            base_url = (campaign["email_base_url"] or "http://127.0.0.1:5055").strip()
+
+            if not email_from or not email_subject or not email_html:
+                flash("Missing email settings: email_from, email_subject, and email_html are required.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+
+            # Create/update template
+            try:
+                template_id = create_or_update_campaign_template(
+                    campaign_key=campaign_key,
+                    template_id=(campaign["email_template_id"] or None),
+                    from_email=email_from,
+                    subject=email_subject,
+                    html=email_html,
+                )
+            except ResendError as e:
+                flash(f"Resend error creating/updating template: {e}", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+
+            # Persist template_id back onto campaign
+            conn.execute(
+                "UPDATE campaigns SET email_template_id = ? WHERE campaign_key = ?",
+                (template_id, campaign_key),
+            )
+            conn.commit()
+
+        # Send outside transaction (still safe; recipients are forced to kohane@gmail.com)
+        try:
+            sends = send_invites_for_campaign(
+                template_id=template_id,
+                campaign_title=str(campaign["title"]),
+                base_url=base_url,
+                invitations=[{"email": r["email"], "token": r["token"]} for r in inv_rows],
+            )
+        except ResendError as e:
+            flash(f"Resend send error: {e}", "error")
+            return redirect(url_for("master_view", campaign_key=campaign_key))
+
+        flash(f"Sent {len(sends)} emails (forced delivery to kohane@gmail.com).", "success")
+        return redirect(url_for("master_view", campaign_key=campaign_key))
 
     @app.get("/campaigns/<campaign_key>/export_invitations.json")
     def export_invitations_json(campaign_key: str) -> Response:

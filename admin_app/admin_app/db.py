@@ -25,6 +25,11 @@ CREATE TABLE IF NOT EXISTS campaigns (
   title TEXT NOT NULL,
   seed INTEGER NOT NULL,
   questionnaire_version INTEGER NOT NULL,
+  email_from TEXT,
+  email_subject TEXT,
+  email_html TEXT,
+  email_template_id TEXT,
+  email_base_url TEXT,
   created_at TEXT NOT NULL DEFAULT ({_utc_now_sql()})
 );
 
@@ -117,6 +122,35 @@ CREATE TABLE IF NOT EXISTS respondent_assignments (
 CREATE INDEX IF NOT EXISTS idx_respondent_assignments_campaign_id ON respondent_assignments(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_respondent_assignments_token ON respondent_assignments(token);
 
+CREATE TABLE IF NOT EXISTS submissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaign_id INTEGER NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL,
+  answers_json TEXT NOT NULL,
+  submitted_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_submissions_campaign_id ON submissions(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_token ON submissions(token);
+
+CREATE TABLE IF NOT EXISTS submission_answers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaign_id INTEGER NOT NULL,
+  token TEXT NOT NULL,
+  block_id TEXT NOT NULL,
+  block_type TEXT NOT NULL,
+  value_text TEXT,
+  value_choice_id TEXT,
+  created_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+  UNIQUE (campaign_id, token, block_id),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_submission_answers_campaign_id ON submission_answers(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_submission_answers_token ON submission_answers(token);
+
 CREATE TABLE IF NOT EXISTS invitation_variants (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   campaign_id INTEGER NOT NULL,
@@ -152,6 +186,7 @@ class Db:
             _ensure_campaign_columns(conn)
             _ensure_invitations_columns(conn)
             _ensure_question_stats_columns(conn)
+            _ensure_submission_tables(conn)
 
 
 def _try_add_column(conn: sqlite3.Connection, table: str, column_def: str) -> None:
@@ -166,6 +201,11 @@ def _ensure_campaign_columns(conn: sqlite3.Connection) -> None:
     _try_add_column(conn, "campaigns", "picker_strategy TEXT NOT NULL DEFAULT 'pick_k_cases'")
     _try_add_column(conn, "campaigns", "k INTEGER NOT NULL DEFAULT 1")
     _try_add_column(conn, "campaigns", "param_vector_json TEXT")
+    _try_add_column(conn, "campaigns", "email_from TEXT")
+    _try_add_column(conn, "campaigns", "email_subject TEXT")
+    _try_add_column(conn, "campaigns", "email_html TEXT")
+    _try_add_column(conn, "campaigns", "email_template_id TEXT")
+    _try_add_column(conn, "campaigns", "email_base_url TEXT")
 
 
 def _ensure_invitations_columns(conn: sqlite3.Connection) -> None:
@@ -178,6 +218,40 @@ def _ensure_invitations_columns(conn: sqlite3.Connection) -> None:
 def _ensure_question_stats_columns(conn: sqlite3.Connection) -> None:
     _try_add_column(conn, "question_stats", "assigned_count INTEGER NOT NULL DEFAULT 0")
     _try_add_column(conn, "question_stats", "submitted_count INTEGER NOT NULL DEFAULT 0")
+
+
+def _ensure_submission_tables(conn: sqlite3.Connection) -> None:
+    # Create tables if they don't exist (CREATE TABLE IF NOT EXISTS is idempotent)
+    conn.executescript(
+        f"""
+        CREATE TABLE IF NOT EXISTS submissions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL,
+          token TEXT NOT NULL UNIQUE,
+          email TEXT NOT NULL,
+          answers_json TEXT NOT NULL,
+          submitted_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_submissions_campaign_id ON submissions(campaign_id);
+        CREATE INDEX IF NOT EXISTS idx_submissions_token ON submissions(token);
+
+        CREATE TABLE IF NOT EXISTS submission_answers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL,
+          token TEXT NOT NULL,
+          block_id TEXT NOT NULL,
+          block_type TEXT NOT NULL,
+          value_text TEXT,
+          value_choice_id TEXT,
+          created_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+          UNIQUE (campaign_id, token, block_id),
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_submission_answers_campaign_id ON submission_answers(campaign_id);
+        CREATE INDEX IF NOT EXISTS idx_submission_answers_token ON submission_answers(token);
+        """
+    )
 
 
 # -----------------------------
@@ -634,6 +708,139 @@ def increment_assigned_count(conn: sqlite3.Connection, *, campaign_id: int, item
         WHERE campaign_id = ? AND item_id = ?
         """,
         (campaign_id, item_id),
+    )
+
+
+def increment_submitted_count(conn: sqlite3.Connection, *, campaign_id: int, item_id: str) -> None:
+    conn.execute(
+        """
+        UPDATE question_stats
+        SET submitted_count = submitted_count + 1,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE campaign_id = ? AND item_id = ?
+        """,
+        (campaign_id, item_id),
+    )
+
+
+def has_submission(conn: sqlite3.Connection, *, token: str) -> bool:
+    row = conn.execute("SELECT 1 FROM submissions WHERE token = ? LIMIT 1", (token,)).fetchone()
+    return row is not None
+
+
+def insert_submission(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    token: str,
+    email: str,
+    answers: dict[str, Any],
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO submissions (campaign_id, token, email, answers_json)
+        VALUES (?, ?, ?, ?)
+        """,
+        (campaign_id, token, email, json.dumps(answers, ensure_ascii=False)),
+    )
+
+
+def insert_submission_answer(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    token: str,
+    block_id: str,
+    block_type: str,
+    value_text: str | None,
+    value_choice_id: str | None,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO submission_answers
+          (campaign_id, token, block_id, block_type, value_text, value_choice_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (campaign_id, token, block_id, block_type, value_text, value_choice_id),
+    )
+
+
+def submission_cohort_counts(conn: sqlite3.Connection, *, campaign_id: int) -> dict[str, int]:
+    row = conn.execute(
+        """
+        SELECT
+          (SELECT COUNT(*) FROM invitations WHERE campaign_id = ?) AS invited,
+          (SELECT COUNT(*) FROM invitations WHERE campaign_id = ? AND opened_at IS NOT NULL) AS opened,
+          (SELECT COUNT(*) FROM invitations WHERE campaign_id = ? AND questionnaire_hash IS NOT NULL) AS assigned,
+          (SELECT COUNT(*) FROM submissions WHERE campaign_id = ?) AS submitted
+        """,
+        (campaign_id, campaign_id, campaign_id, campaign_id),
+    ).fetchone()
+    assert row is not None
+    return {
+        "invited": int(row["invited"]),
+        "opened": int(row["opened"]),
+        "assigned": int(row["assigned"]),
+        "submitted": int(row["submitted"]),
+    }
+
+
+def report_rows(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    kind: str,
+) -> list[sqlite3.Row]:
+    """
+    kind in: invited_not_submitted | opened_not_submitted | assigned_not_submitted | submitted
+    """
+    if kind == "submitted":
+        return list(
+            conn.execute(
+                """
+                SELECT
+                  i.email,
+                  i.token,
+                  i.opened_at,
+                  i.questionnaire_hash,
+                  s.submitted_at
+                FROM submissions s
+                JOIN invitations i ON i.campaign_id = s.campaign_id AND i.token = s.token
+                WHERE s.campaign_id = ?
+                ORDER BY s.submitted_at DESC
+                """,
+                (campaign_id,),
+            ).fetchall()
+        )
+
+    where_extra = ""
+    if kind == "invited_not_submitted":
+        where_extra = "1=1"
+    elif kind == "opened_not_submitted":
+        where_extra = "i.opened_at IS NOT NULL"
+    elif kind == "assigned_not_submitted":
+        where_extra = "i.questionnaire_hash IS NOT NULL"
+    else:
+        raise ValueError(f"Unknown report kind: {kind}")
+
+    return list(
+        conn.execute(
+            f"""
+            SELECT
+              i.email,
+              i.token,
+              i.opened_at,
+              i.questionnaire_hash,
+              NULL AS submitted_at
+            FROM invitations i
+            LEFT JOIN submissions s ON s.campaign_id = i.campaign_id AND s.token = i.token
+            WHERE i.campaign_id = ?
+              AND s.token IS NULL
+              AND ({where_extra})
+            ORDER BY i.email
+            """,
+            (campaign_id,),
+        ).fetchall()
     )
 
 

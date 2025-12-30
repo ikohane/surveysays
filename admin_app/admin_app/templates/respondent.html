@@ -13,6 +13,7 @@
   <div class="card">
     <h3 style="margin-top:0;">Rendered</h3>
     {% set blocks = qjson['blocks'] %}
+    <form method="post" action="{{ url_for('respondent_submit', token=token) }}">
     {% for b in blocks %}
       {% if b['type'] == 'vignette' %}
         <div class="card" style="margin: 0 0 10px 0;">
@@ -26,14 +27,12 @@
           <div style="height: 6px;"></div>
           <div style="font-weight: 700;">{{ b['prompt'] }}</div>
           <div style="height: 10px;"></div>
-          <form>
-            {% for c in b['choices'] %}
-              <label style="display:flex; gap:10px; align-items:center; margin-bottom: 8px;">
-                <input type="radio" name="{{ b['id'] }}" value="{{ c['id'] }}" />
-                <span><strong>{{ c['id'] }}</strong> — {{ c['label'] }}</span>
-              </label>
-            {% endfor %}
-          </form>
+          {% for c in b['choices'] %}
+            <label style="display:flex; gap:10px; align-items:center; margin-bottom: 8px;">
+              <input type="radio" name="ans__{{ b['id'] }}" value="{{ c['id'] }}" required />
+              <span><strong>{{ c['id'] }}</strong> — {{ c['label'] }}</span>
+            </label>
+          {% endfor %}
         </div>
       {% elif b['type'] == 'freeText' %}
         <div class="card" style="margin: 0;">
@@ -41,10 +40,13 @@
           <div style="height: 6px;"></div>
           <div style="font-weight: 700;">{{ b['prompt'] }}</div>
           <div style="height: 10px;"></div>
-          <input type="text" placeholder="Type your answer..." />
+          <input type="text" name="ans__{{ b['id'] }}" placeholder="Type your answer..." required />
         </div>
       {% endif %}
     {% endfor %}
+      <div style="height: 12px;"></div>
+      <button type="submit">Submit</button>
+    </form>
   </div>
 
   <div class="card">

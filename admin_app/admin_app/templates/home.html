@@ -66,6 +66,7 @@
           <select name="picker_strategy" style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px;">
             <option value="pick_k_cases">pick_k_cases (from cases.csv)</option>
             <option value="template_expand">template_expand (from templates.csv + param_vector.json)</option>
+            <option value="online_assign">online_assign (assign on link-open)</option>
           </select>
         </div>
         <div>
@@ -85,6 +86,7 @@
             <th>title</th>
             <th>seed</th>
             <th>version</th>
+            <th>master</th>
             <th>created</th>
           </tr>
         </thead>
@@ -95,6 +97,7 @@
               <td>{{ c['title'] }}</td>
               <td>{{ c['seed'] }}</td>
               <td>{{ c['questionnaire_version'] }}</td>
+              <td><a href="{{ url_for('master_view', campaign_key=c['campaign_key']) }}">master</a></td>
               <td class="muted">{{ c['created_at'] }}</td>
             </tr>
           {% endfor %}

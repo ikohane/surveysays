@@ -58,6 +58,20 @@ If you set a campaign’s picker strategy to **`online_assign`**:
 
 This “assignment on first link-open” mode was added to satisfy a collaborator specification from **Payal Chandak**.
 
+## Submission (online_assign)
+
+In `online_assign` mode, respondents submit exactly once per token.
+
+- **Submit endpoint**: `POST /s/<token>/submit`
+- **Payload (conceptual, 1A answers map)**:
+  - `answers: { [blockId]: value }`
+  - where `value` is:
+    - `singleSelect`: a `choice.id` string
+    - `freeText`: a string
+- **Repeat submits**: return **HTTP 409 Conflict** (first submit wins).
+
+The local simulated respondent page (`/s/<token>`) renders an HTML form and posts to the submit endpoint.
+
 ## Next steps (Cloudflare + Resend)
 
 From the project plan (`.cursor/plans/qgen-local-admin.plan.md`), the next parallel steps to take once local authoring is stable:

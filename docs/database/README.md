@@ -77,6 +77,8 @@ Stores email + token and (after first link-open) the snapshotted questionnaire.
   - `token` (unique): used in `/s/<token>`
   - `opened_at`: set on first open
   - `questionnaire_json` / `questionnaire_hash`: filled on first open (snapshot)
+- **Submission linkage**
+  - Final responses are stored in `submissions` keyed by `token` (one-and-done; repeats return 409 in the app).
 - **Uniqueness**
   - `(campaign_id, email)` is unique: one invite per recipient per campaign
 
@@ -92,13 +94,28 @@ The campaign’s assignable question bank snapshot.
 Exposure counters per `question_items` row.
 
 - `assigned_count`: incremented when an item is assigned at link-open time
-- `submitted_count`: reserved for later (increment on response submit)
+- `submitted_count`: incremented when a token submits (for each assigned item)
 
 #### `respondent_assignments`
 
 The chosen items for a given invitation token (ordered by `position`).
 
 - This is the authoritative mapping from **token → set of question items**.
+
+#### `submissions`
+
+One final submission per token (MVP).
+
+- `token` is unique (enforces one-and-done)
+- `answers_json` stores the 1A answers map keyed by block id
+
+#### `submission_answers`
+
+Normalized per-block answers for analytics (derived from `answers_json` on submit).
+
+- One row per `(campaign_id, token, block_id)`
+- For `freeText`: `value_text` is populated
+- For `singleSelect`: `value_choice_id` is populated
 
 ## Relationships / data flow
 

@@ -207,6 +207,33 @@ def main() -> None:
     assert int(sum_assigned_2) == 2
     conn.close()
 
+    # 5b) Submit responses (one-and-done) + reports cohorts
+    # Build minimal answers map from snapshot blocks (only answerable required blocks).
+    inv_row = sqlite3.connect(str(db_path))
+    inv_row.row_factory = sqlite3.Row
+    row = inv_row.execute("SELECT questionnaire_json FROM invitations WHERE token = ?", (token0,)).fetchone()
+    assert row is not None
+    qj = json.loads(row["questionnaire_json"])
+    answers_form = {}
+    for b in qj["blocks"]:
+        if b["type"] == "singleSelect":
+            answers_form[f"ans__{b['id']}"] = b["choices"][0]["id"]
+        if b["type"] == "freeText":
+            answers_form[f"ans__{b['id']}"] = "test"
+    inv_row.close()
+
+    r = client.post(f"/s/{token0}/submit", data=answers_form, follow_redirects=False)
+    assert r.status_code in (302, 303), f"expected redirect after submit, got {r.status_code}"
+
+    # Repeat submit returns 409
+    r = client.post(f"/s/{token0}/submit", data=answers_form)
+    assert r.status_code == 409
+
+    # Reports page renders and cohort counts show submitted==1
+    r = client.get(f"/campaigns/{campaign_online}/reports")
+    assert r.status_code == 200
+    assert b"Submitted" in r.data
+
     # 6) freeText block (contract + rendering)
     q_free = {
         "title": "FreeText Test",

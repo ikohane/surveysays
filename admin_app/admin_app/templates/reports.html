@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <div class="actions" style="justify-content: space-between;">
+      <div>
+        <h2 style="margin: 0;">Reports</h2>
+        <div class="muted">Campaign: {{ campaign['campaign_key'] }} · Strategy: {{ campaign['picker_strategy'] }}</div>
+      </div>
+      <div class="actions">
+        <a href="{{ url_for('campaign_detail', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Back</button></a>
+        <a href="{{ url_for('campaign_invitations', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Invitations</button></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Cohort counts</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Invited</th>
+          <th>Opened</th>
+          <th>Assigned</th>
+          <th>Submitted</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:700;">{{ counts.invited }}</td>
+          <td style="font-weight:700;">{{ counts.opened }}</td>
+          <td style="font-weight:700;">{{ counts.assigned }}</td>
+          <td style="font-weight:700;">{{ counts.submitted }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Invited but not submitted</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Token</th>
+          <th>Opened</th>
+          <th>Assigned hash</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in invited_not_submitted %}
+          <tr>
+            <td><code>{{ r['email'] }}</code></td>
+            <td><code style="font-size:12px;">{{ r['token'] }}</code></td>
+            <td>{{ r['opened_at'] or '' }}</td>
+            <td><code style="font-size:12px;">{{ r['questionnaire_hash'] or '' }}</code></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Opened but not submitted</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Token</th>
+          <th>Opened</th>
+          <th>Assigned hash</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in opened_not_submitted %}
+          <tr>
+            <td><code>{{ r['email'] }}</code></td>
+            <td><code style="font-size:12px;">{{ r['token'] }}</code></td>
+            <td>{{ r['opened_at'] or '' }}</td>
+            <td><code style="font-size:12px;">{{ r['questionnaire_hash'] or '' }}</code></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Assigned but not submitted</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Token</th>
+          <th>Opened</th>
+          <th>Assigned hash</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in assigned_not_submitted %}
+          <tr>
+            <td><code>{{ r['email'] }}</code></td>
+            <td><code style="font-size:12px;">{{ r['token'] }}</code></td>
+            <td>{{ r['opened_at'] or '' }}</td>
+            <td><code style="font-size:12px;">{{ r['questionnaire_hash'] or '' }}</code></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Submitted</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Token</th>
+          <th>Opened</th>
+          <th>Assigned hash</th>
+          <th>Submitted at</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in submitted %}
+          <tr>
+            <td><code>{{ r['email'] }}</code></td>
+            <td><code style="font-size:12px;">{{ r['token'] }}</code></td>
+            <td>{{ r['opened_at'] or '' }}</td>
+            <td><code style="font-size:12px;">{{ r['questionnaire_hash'] or '' }}</code></td>
+            <td>{{ r['submitted_at'] or '' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
+
+

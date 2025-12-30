@@ -7,6 +7,7 @@
         <div class="muted">{{ campaign['title'] }}</div>
       </div>
       <div class="actions">
+        <a href="{{ url_for('master_view', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Master</button></a>
         {% if campaign['picker_strategy'] == 'online_assign' %}
           <a href="{{ url_for('campaign_invitations', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Invitations</button></a>
           <a href="{{ url_for('online_stats', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Online stats</button></a>
