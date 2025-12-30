@@ -9,4 +9,7 @@ out/
 
 .DS_Store
 
+.env
+datasheets/
+
 
