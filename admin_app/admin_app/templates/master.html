@@ -106,7 +106,7 @@
   <div class="card">
     <h3 style="margin-top:0;">Email (Resend) settings</h3>
     <div class="muted">
-      Safety: during MVP testing, sends will be forced to <code>kohane@gmail.com</code>. The intended recipient is still available via <code>{{{RECIPIENT_EMAIL}}}</code>.
+      Safety: during MVP testing, sends will be forced to <code>kohane@gmail.com</code>. The intended recipient is still available via <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code>.
     </div>
     {% if campaign['email_template_id'] %}
       <div class="muted" style="margin-top: 6px;">Resend template id: <code>{{ campaign['email_template_id'] }}</code></div>
@@ -133,7 +133,7 @@
       </div>
       <div style="height: 10px;"></div>
       <label>email_html (Resend template body)</label>
-      <div class="muted">Allowed variables: <code>{{{SURVEY_LINK}}}</code>, <code>{{{CAMPAIGN_TITLE}}}</code>, <code>{{{RECIPIENT_EMAIL}}}</code></div>
+      <div class="muted">Allowed variables: <code>{% raw %}{{{SURVEY_LINK}}}{% endraw %}</code>, <code>{% raw %}{{{CAMPAIGN_TITLE}}}{% endraw %}</code>, <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code></div>
       <div style="height: 8px;"></div>
       <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ campaign['email_html'] or '' }}</textarea>
       <div style="height: 10px;"></div>

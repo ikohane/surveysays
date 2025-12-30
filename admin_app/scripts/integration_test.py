@@ -96,6 +96,12 @@ def main() -> None:
     create_campaign(campaign_key=campaign_pickk, picker_strategy="pick_k_cases", k=2)
     generate(campaign_pickk)
 
+    # Master view should render for offline campaigns
+    r = client.get(f"/campaigns/{campaign_pickk}/master")
+    assert r.status_code == 200
+    assert b"Master view" in r.data
+    assert b"Generate variants" in r.data or b"Generate" in r.data
+
     payload1 = export_payload(campaign_pickk)
     assert len(payload1["invitations"]) == 5
     inv0 = payload1["invitations"][0]
@@ -152,6 +158,14 @@ def main() -> None:
     campaign_online = "it_online"
     create_campaign(campaign_key=campaign_online, picker_strategy="online_assign", k=2)
     generate(campaign_online)
+
+    # Master view should render for online_assign campaigns and include email controls
+    r = client.get(f"/campaigns/{campaign_online}/master")
+    assert r.status_code == 200
+    assert b"Master view" in r.data
+    assert b"Prepare online_assign" in r.data
+    assert b"Email (Resend) settings" in r.data
+    assert b"Send invitation emails" in r.data
 
     resp = client.get(f"/campaigns/{campaign_online}/export_invitations.json")
     assert resp.status_code == 200
