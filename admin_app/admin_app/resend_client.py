@@ -9,7 +9,10 @@ from typing import Any
 
 
 class ResendError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, status_code: int | None = None, body: str | None = None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.body = body
 
 
 RESEND_API_BASE = "https://api.resend.com"
@@ -36,7 +39,7 @@ def _request_json(*, method: str, path: str, body: dict[str, Any] | None) -> dic
             return json.loads(raw) if raw else {}
     except urllib.error.HTTPError as e:
         raw = e.read().decode("utf-8") if hasattr(e, "read") else ""
-        raise ResendError(f"Resend API error {e.code} {e.reason}: {raw}") from e
+        raise ResendError(f"Resend API error {e.code} {e.reason}: {raw}", status_code=int(e.code), body=raw) from e
     except urllib.error.URLError as e:
         raise ResendError(f"Resend API connection error: {e}") from e
 
@@ -112,7 +115,7 @@ def send_invites_for_campaign(
     campaign_title: str,
     base_url: str,
     invitations: list[dict[str, Any]],
-    max_per_second: float = 1.5,
+    max_per_second: float = 0.8,
 ) -> list[dict[str, Any]]:
     """
     Safety gate: all messages are forced to FORCED_TEST_TO_EMAIL.
@@ -131,15 +134,28 @@ def send_invites_for_campaign(
             time.sleep(min_interval - (now - last))
         last = time.monotonic()
 
-        resp = send_email_with_template(
-            to_email=FORCED_TEST_TO_EMAIL,
-            template_id=template_id,
-            variables={
-                "SURVEY_LINK": survey_link,
-                "CAMPAIGN_TITLE": campaign_title,
-                "RECIPIENT_EMAIL": intended_email,
-            },
-        )
+        attempt = 0
+        while True:
+            attempt += 1
+            try:
+                resp = send_email_with_template(
+                    to_email=FORCED_TEST_TO_EMAIL,
+                    template_id=template_id,
+                    variables={
+                        "SURVEY_LINK": survey_link,
+                        "CAMPAIGN_TITLE": campaign_title,
+                        "RECIPIENT_EMAIL": intended_email,
+                    },
+                )
+                break
+            except ResendError as e:
+                # Retry on rate limits with exponential backoff.
+                is_rate_limited = (e.status_code == 429) or ("429" in str(e)) or ("rate_limit" in str(e).lower())
+                if is_rate_limited and attempt <= 6:
+                    backoff = min(12.0, 0.5 * (2 ** (attempt - 1)))
+                    time.sleep(backoff)
+                    continue
+                raise
         results.append({"intended_email": intended_email, "token": token, "resend_response": resp})
     return results
 
