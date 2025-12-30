@@ -119,6 +119,17 @@ def main() -> None:
     assert r.status_code == 200
     assert b"Respondent view" in r.data
 
+    # Offline submit should work too (one-and-done)
+    qj_off = json.loads(inv["questionnaire_json"])
+    answers_form_off = {}
+    for b in qj_off["blocks"]:
+        if b["type"] == "singleSelect":
+            answers_form_off[f"ans__{b['id']}"] = b["choices"][0]["id"]
+    r = client.post(f"/s/{inv['token']}/submit", data=answers_form_off, follow_redirects=False)
+    assert r.status_code in (302, 303)
+    r = client.post(f"/s/{inv['token']}/submit", data=answers_form_off)
+    assert r.status_code == 409
+
     payload1 = export_payload(campaign_pickk)
     assert len(payload1["invitations"]) == 5
     inv0 = payload1["invitations"][0]

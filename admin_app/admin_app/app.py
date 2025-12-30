@@ -527,8 +527,6 @@ def create_app() -> Flask:
             campaign = conn.execute("SELECT * FROM campaigns WHERE id = ?", (int(inv["campaign_id"]),)).fetchone()
             if campaign is None:
                 return Response("Campaign not found", status=404)
-            if campaign["picker_strategy"] != "online_assign":
-                return Response("This invitation is not for an online_assign campaign", status=400)
 
             if has_submission(conn, token=token):
                 return Response("Already submitted", status=409)
@@ -565,8 +563,6 @@ def create_app() -> Flask:
                     value_text = str(val)
                 elif btype == "singleSelect":
                     value_choice_id = str(val)
-                    # Increment submitted_count for the underlying question_item when possible (online_assign only)
-                    # We stored item_id in QuestionUnit metadata but not in blocks; instead, use respondent_assignments.
                 insert_submission_answer(
                     conn,
                     campaign_id=campaign_id,
@@ -577,10 +573,11 @@ def create_app() -> Flask:
                     value_choice_id=value_choice_id,
                 )
 
-            # Increment submitted_count for each assigned item (online bank items)
-            assigned = list_assignments_for_token(conn, campaign_id=campaign_id, token=token)
-            for a in assigned:
-                increment_submitted_count(conn, campaign_id=campaign_id, item_id=str(a["item_id"]))
+            # Increment submitted_count for each assigned item (online_assign only)
+            if campaign["picker_strategy"] == "online_assign":
+                assigned = list_assignments_for_token(conn, campaign_id=campaign_id, token=token)
+                for a in assigned:
+                    increment_submitted_count(conn, campaign_id=campaign_id, item_id=str(a["item_id"]))
 
             conn.commit()
 
