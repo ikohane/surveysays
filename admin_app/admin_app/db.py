@@ -466,6 +466,40 @@ def insert_variants(
     return n
 
 
+def populate_invitations_from_variants(conn: sqlite3.Connection, *, campaign_id: int) -> int:
+    """
+    For offline campaigns, create (campaign_id,email)->token invitations and snapshot the pre-generated questionnaire.
+
+    - Keeps existing tokens stable if invitation already exists.
+    - Writes questionnaire_json + questionnaire_hash onto invitations.
+    Returns number of invitations processed.
+    """
+    rows = conn.execute(
+        """
+        SELECT email, questionnaire_json, questionnaire_hash
+        FROM invitation_variants
+        WHERE campaign_id = ?
+        ORDER BY email
+        """,
+        (campaign_id,),
+    ).fetchall()
+    n = 0
+    for r in rows:
+        token = secrets.token_urlsafe(18)
+        conn.execute(
+            """
+            INSERT INTO invitations (campaign_id, email, token, questionnaire_json, questionnaire_hash)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(campaign_id, email) DO UPDATE SET
+              questionnaire_json = excluded.questionnaire_json,
+              questionnaire_hash = excluded.questionnaire_hash
+            """,
+            (campaign_id, r["email"], token, r["questionnaire_json"], r["questionnaire_hash"]),
+        )
+        n += 1
+    return n
+
+
 def list_variants_for_campaign(conn: sqlite3.Connection, *, campaign_id: int) -> list[sqlite3.Row]:
     return list(
         conn.execute(

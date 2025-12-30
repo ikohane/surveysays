@@ -102,6 +102,23 @@ def main() -> None:
     assert b"Master view" in r.data
     assert b"Generate variants" in r.data or b"Generate" in r.data
 
+    # Offline campaigns should also have tokenized invitations with snapshots after Generate
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    campaign_id_pickk = int(conn.execute("SELECT id FROM campaigns WHERE campaign_key = ?", (campaign_pickk,)).fetchone()["id"])
+    inv = conn.execute(
+        "SELECT token, questionnaire_json FROM invitations WHERE campaign_id = ? ORDER BY email LIMIT 1",
+        (campaign_id_pickk,),
+    ).fetchone()
+    assert inv is not None
+    assert inv["token"]
+    assert inv["questionnaire_json"], "offline invitation should have snapshotted questionnaire_json"
+    conn.close()
+
+    r = client.get(f"/s/{inv['token']}")
+    assert r.status_code == 200
+    assert b"Respondent view" in r.data
+
     payload1 = export_payload(campaign_pickk)
     assert len(payload1["invitations"]) == 5
     inv0 = payload1["invitations"][0]

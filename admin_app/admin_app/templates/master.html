@@ -108,6 +108,9 @@
     <div class="muted">
       Safety: during MVP testing, sends will be forced to <code>kohane@gmail.com</code>. The intended recipient is still available via <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code>.
     </div>
+    <div class="muted" style="margin-top: 6px;">
+      Link behavior: <strong>online_assign</strong> assigns on first open; <strong>offline</strong> renders the pre-generated snapshot.
+    </div>
     {% if campaign['email_template_id'] %}
       <div class="muted" style="margin-top: 6px;">Resend template id: <code>{{ campaign['email_template_id'] }}</code></div>
     {% endif %}

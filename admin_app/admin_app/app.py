@@ -36,6 +36,7 @@ from .db import (
     load_recipients,
     load_templates,
     mark_invitation_opened,
+    populate_invitations_from_variants,
     report_rows,
     save_invitation_snapshot,
     insert_assignment,
@@ -353,6 +354,8 @@ def create_app() -> Flask:
 
             clear_variants_for_campaign(conn, campaign_id=int(campaign["id"]))
             insert_variants(conn, campaign_id=int(campaign["id"]), variants=payload["invitations"])
+            # Offline campaigns: also create tokenized invitations + store snapshot so we can email /s/<token>.
+            populate_invitations_from_variants(conn, campaign_id=int(campaign["id"]))
             conn.commit()
 
         flash(f"Generated {len(payload['invitations'])} variants", "success")
@@ -423,7 +426,9 @@ def create_app() -> Flask:
     @app.get("/s/<token>")
     def respondent_open(token: str) -> Response:
         """
-        Simulates the respondent link-open flow (assignment happens on first GET).
+        Respondent link-open flow:
+        - online_assign: assignment happens on first GET
+        - offline (pick_k_cases/template_expand): render-only the pre-generated snapshot stored on invitations
         """
         with db.connect() as conn:
             inv = get_invitation_by_token(conn, token=token)
@@ -432,10 +437,16 @@ def create_app() -> Flask:
             campaign = conn.execute("SELECT * FROM campaigns WHERE id = ?", (int(inv["campaign_id"]),)).fetchone()
             if campaign is None:
                 return Response("Campaign not found", status=404)
-            if campaign["picker_strategy"] != "online_assign":
-                return Response("This invitation is not for an online_assign campaign", status=400)
             mark_invitation_opened(conn, token=token)
-            qjson = _assign_on_open(conn=conn, campaign_row=campaign, invitation_row=inv)
+            if campaign["picker_strategy"] == "online_assign":
+                qjson = _assign_on_open(conn=conn, campaign_row=campaign, invitation_row=inv)
+            else:
+                if not inv["questionnaire_json"]:
+                    return Response(
+                        "No questionnaire snapshot for this token yet. Generate variants for this campaign first.",
+                        status=400,
+                    )
+                qjson = json.loads(inv["questionnaire_json"])
             conn.commit()
         return Response(
             render_template("respondent.html", campaign=campaign, email=inv["email"], token=token, qjson=qjson),
@@ -703,7 +714,7 @@ def create_app() -> Flask:
     @app.post("/campaigns/<campaign_key>/send-emails")
     def send_emails(campaign_key: str) -> Response:
         """
-        Sends invitation emails for online_assign campaigns using a per-campaign Resend template.
+        Sends invitation emails for both online_assign and offline campaigns using a per-campaign Resend template.
         HARD SAFETY: all outbound emails are forced to kohane@gmail.com (see resend_client.FORCED_TEST_TO_EMAIL).
         """
         with db.connect() as conn:
@@ -711,15 +722,19 @@ def create_app() -> Flask:
             if campaign is None:
                 flash("Campaign not found", "error")
                 return redirect(url_for("home"))
-            if campaign["picker_strategy"] != "online_assign":
-                flash("Send emails is currently only implemented for online_assign campaigns.", "error")
-                return redirect(url_for("master_view", campaign_key=campaign_key))
 
             # Ensure invitations exist
             inv_rows = list_invitations_for_campaign(conn, campaign_id=int(campaign["id"]))
             if not inv_rows:
-                flash("No invitations yet. Click Prepare first.", "error")
+                flash("No invitations yet. Click Generate/Prepare first.", "error")
                 return redirect(url_for("master_view", campaign_key=campaign_key))
+
+            # Offline campaigns require snapshot to be present for tokenized links
+            if campaign["picker_strategy"] != "online_assign":
+                missing = [r for r in inv_rows if not r["questionnaire_json"]]
+                if missing:
+                    flash("Some invitations are missing questionnaire snapshots. Click Generate first.", "error")
+                    return redirect(url_for("master_view", campaign_key=campaign_key))
 
             email_from = (campaign["email_from"] or "").strip()
             email_subject = (campaign["email_subject"] or "").strip()
