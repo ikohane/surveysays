@@ -81,6 +81,39 @@ def update_template(*, template_id: str, name: str, from_email: str, subject: st
         _request_json(method="PUT", path=f"/templates/{template_id}", body=payload)
 
 
+def publish_template(*, template_id: str) -> None:
+    """
+    Resend templates may be created in draft status; draft templates cannot be used to send.
+    Best-effort publish with fallbacks because API shapes vary across accounts/SDK versions.
+    """
+    # Try the most obvious endpoint first.
+    try:
+        _request_json(method="POST", path=f"/templates/{template_id}/publish", body=None)
+        return
+    except ResendError:
+        pass
+
+    # Try PATCH with a status field (if supported).
+    try:
+        _request_json(method="PATCH", path=f"/templates/{template_id}", body={"status": "published"})
+        return
+    except ResendError:
+        pass
+
+    # Try POST publish without a trailing segment (some APIs use actions via query/field)
+    try:
+        _request_json(method="POST", path=f"/templates/{template_id}", body={"action": "publish"})
+        return
+    except ResendError:
+        pass
+
+    # If none worked, let the caller decide how to surface it.
+    raise ResendError(
+        "Unable to publish template automatically. Please publish the template in the Resend dashboard and retry.",
+        status_code=None,
+    )
+
+
 def create_or_update_campaign_template(*, campaign_key: str, template_id: str | None, from_email: str, subject: str, html: str) -> str:
     variables = [
         {"key": "SURVEY_LINK", "type": "string", "fallbackValue": "http://127.0.0.1:5055/"},
@@ -91,11 +124,14 @@ def create_or_update_campaign_template(*, campaign_key: str, template_id: str | 
     if template_id:
         try:
             update_template(template_id=template_id, name=name, from_email=from_email, subject=subject, html=html, variables=variables)
+            publish_template(template_id=template_id)
             return template_id
         except ResendError:
             # If update fails (e.g. template missing), create a new one.
             pass
-    return create_template(name=name, from_email=from_email, subject=subject, html=html, variables=variables)
+    new_id = create_template(name=name, from_email=from_email, subject=subject, html=html, variables=variables)
+    publish_template(template_id=new_id)
+    return new_id
 
 
 def send_email_with_template(*, to_email: str, template_id: str, variables: dict[str, Any]) -> dict[str, Any]:
