@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import ssl
+import sqlite3
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -60,6 +61,7 @@ from .db import (
     upsert_templates,
     upsert_question_items_from_cases,
     variant_counts,
+    record_event,
 )
 
 from .resend_client import ResendError, create_or_update_campaign_template, send_invites_for_campaign
@@ -133,6 +135,28 @@ def _cloud_post_json(*, url: str, bearer_token: str, payload_obj: Any, timeout_s
         raise RuntimeError(f"Cloud HTTP {e.code}: {body[:600]}") from e
     except urllib.error.URLError as e:
         raise RuntimeError(f"Cloud connection error: {e}") from e
+
+
+def _log_event(
+    conn: sqlite3.Connection,
+    *,
+    campaign: sqlite3.Row | None,
+    event: str,
+    success: bool,
+    message: str | None = None,
+) -> None:
+    from .db import record_event
+
+    campaign_id = int(campaign["id"]) if campaign is not None else None
+    campaign_key = str(campaign["campaign_key"]) if campaign is not None else None
+    record_event(
+        conn,
+        campaign_id=campaign_id,
+        campaign_key=campaign_key,
+        event=event,
+        success=success,
+        message=message,
+    )
 
 
 def create_app() -> Flask:
@@ -269,13 +293,15 @@ def create_app() -> Flask:
             text = f.stream.read().decode("utf-8")
             cases = parse_cases_csv(text)
         except Exception as e:
+            with db.connect() as conn:
+                _log_event(conn, campaign=None, event="import_cases", success=False, message=str(e))
             flash(f"Failed to parse cases.csv: {e}", "error")
             return redirect(request.referrer or url_for("home"))
 
         with db.connect() as conn:
             n = upsert_cases(conn, cases)
             conn.commit()
-        flash(f"Imported {n} cases", "success")
+            _log_event(conn, campaign=None, event="import_cases", success=True, message=f"Imported {n} cases")
         return redirect(request.referrer or url_for("home"))
 
     @app.post("/imports/recipients")
@@ -288,13 +314,15 @@ def create_app() -> Flask:
             text = f.stream.read().decode("utf-8")
             recs = parse_recipients_csv(text)
         except Exception as e:
+            with db.connect() as conn:
+                _log_event(conn, campaign=None, event="import_recipients", success=False, message=str(e))
             flash(f"Failed to parse recipients.csv: {e}", "error")
             return redirect(request.referrer or url_for("home"))
 
         with db.connect() as conn:
             n = upsert_recipients(conn, recs)
             conn.commit()
-        flash(f"Imported {n} recipients", "success")
+            _log_event(conn, campaign=None, event="import_recipients", success=True, message=f"Imported {n} recipients")
         return redirect(request.referrer or url_for("home"))
 
     @app.post("/imports/templates")
@@ -307,12 +335,15 @@ def create_app() -> Flask:
             text = f.stream.read().decode("utf-8")
             templates = parse_templates_csv(text)
         except Exception as e:
+            with db.connect() as conn:
+                _log_event(conn, campaign=None, event="import_templates", success=False, message=str(e))
             flash(f"Failed to parse templates.csv: {e}", "error")
             return redirect(request.referrer or url_for("home"))
 
         with db.connect() as conn:
             n = upsert_templates(conn, templates)
             conn.commit()
+            _log_event(conn, campaign=None, event="import_templates", success=True, message=f"Imported {n} templates")
         flash(f"Imported {n} templates", "success")
         return redirect(request.referrer or url_for("home"))
 
@@ -350,6 +381,7 @@ def create_app() -> Flask:
             templates = load_templates(conn)
             if not recipients:
                 flash("No recipients imported yet. Import recipients.csv first.", "error")
+                _log_event(conn, campaign=campaign, event="generate_variants", success=False, message="No recipients imported yet")
                 return redirect(url_for("campaign_detail", campaign_key=campaign_key))
 
             picker_strategy = (campaign["picker_strategy"] if "picker_strategy" in campaign.keys() else "pick_k_cases")  # type: ignore[attr-defined]
@@ -358,6 +390,7 @@ def create_app() -> Flask:
             if picker_strategy == "online_assign":
                 if not cases:
                     flash("No cases imported yet. Import cases.csv first.", "error")
+                    _log_event(conn, campaign=campaign, event="generate_variants", success=False, message="No cases imported yet")
                     return redirect(url_for("campaign_detail", campaign_key=campaign_key))
                 # Build question bank + invitations; assignment happens on /s/<token>.
                 clear_variants_for_campaign(conn, campaign_id=int(campaign["id"]))
@@ -374,14 +407,17 @@ def create_app() -> Flask:
             if picker_strategy == "pick_k_cases":
                 if not cases:
                     flash("No cases imported yet. Import cases.csv first.", "error")
+                    _log_event(conn, campaign=campaign, event="generate_variants", success=False, message="No cases imported yet")
                     return redirect(url_for("campaign_detail", campaign_key=campaign_key))
             elif picker_strategy == "template_expand":
                 if not templates:
                     flash("No templates imported yet. Import templates.csv first.", "error")
+                    _log_event(conn, campaign=campaign, event="generate_variants", success=False, message="No templates imported yet")
                     return redirect(url_for("campaign_detail", campaign_key=campaign_key))
                 pv = campaign["param_vector_json"] if "param_vector_json" in campaign.keys() else None  # type: ignore[attr-defined]
                 if not pv:
                     flash("No param_vector.json uploaded for this campaign.", "error")
+                    _log_event(conn, campaign=campaign, event="generate_variants", success=False, message="Missing param_vector")
                     return redirect(url_for("campaign_detail", campaign_key=campaign_key))
                 # Reconstruct a minimal templates.csv text from DB rows (keeps generator API stable)
                 # For MVP, serialize templates back to CSV-like content isn't necessary; we can instead
@@ -440,7 +476,13 @@ def create_app() -> Flask:
             # Offline campaigns: also create tokenized invitations + store snapshot so we can email /s/<token>.
             populate_invitations_from_variants(conn, campaign_id=int(campaign["id"]))
             conn.commit()
-
+            _log_event(
+                conn,
+                campaign=campaign,
+                event="generate_variants",
+                success=True,
+                message=f"Generated {len(payload['invitations'])} variants",
+            )
         flash(f"Generated {len(payload['invitations'])} variants", "success")
         return redirect(url_for("campaign_detail", campaign_key=campaign_key))
 
@@ -780,6 +822,7 @@ def create_app() -> Flask:
             cloud_last_upload = None
             cloud_latest_tokens = []
             cloud_push_history: list[dict[str, Any]] = []
+            events: list[Any] = []
             if cloud_base_url:
                 cloud_last_upload = get_last_cloud_push(conn, campaign_id=campaign_id, cloud_base_url=cloud_base_url)
                 cloud_latest_tokens = list_cloud_latest_tokens(
@@ -793,6 +836,9 @@ def create_app() -> Flask:
                             "tokens": list_cloud_tokens_for_push(conn, push_id=int(p["push_id"])),
                         }
                     )
+                events = list_events(conn, campaign_id=campaign_id, limit=20)
+            else:
+                events = []
 
         return render_template(
             "master.html",
@@ -809,6 +855,7 @@ def create_app() -> Flask:
             cloud_last_upload=cloud_last_upload,
             cloud_latest_tokens=cloud_latest_tokens,
             cloud_push_history=cloud_push_history,
+            event_log=events,
         )
 
     @app.post("/campaigns/<campaign_key>/cloud/push")
@@ -987,6 +1034,7 @@ def create_app() -> Flask:
                 (email_from, email_subject, email_base_url, email_html, campaign_key),
             )
             conn.commit()
+        _log_event(conn, campaign=campaign, event="update_email_settings", success=True)
 
         flash("Saved email settings", "success")
         return redirect(url_for("master_view", campaign_key=campaign_key))
@@ -1022,6 +1070,13 @@ def create_app() -> Flask:
             base_url = (campaign["email_base_url"] or "http://127.0.0.1:5055").strip()
 
             if not email_from or not email_subject or not email_html:
+                _log_event(
+                    conn,
+                    campaign=campaign,
+                    event="send_emails",
+                    success=False,
+                    message="Missing email settings",
+                )
                 flash("Missing email settings: email_from, email_subject, and email_html are required.", "error")
                 return redirect(url_for("master_view", campaign_key=campaign_key))
 
@@ -1035,6 +1090,13 @@ def create_app() -> Flask:
                     html=email_html,
                 )
             except ResendError as e:
+                _log_event(
+                    conn,
+                    campaign=campaign,
+                    event="send_emails",
+                    success=False,
+                    message=f"Template update error: {e}",
+                )
                 flash(f"Resend error creating/updating template: {e}", "error")
                 return redirect(url_for("master_view", campaign_key=campaign_key))
 
@@ -1064,10 +1126,24 @@ def create_app() -> Flask:
                 ],
             )
         except ResendError as e:
+            _log_event(
+                conn,
+                campaign=campaign,
+                event="send_emails",
+                success=False,
+                message=f"Resend send error: {e}",
+            )
             flash(f"Resend send error: {e}", "error")
             return redirect(url_for("master_view", campaign_key=campaign_key))
 
         flash(f"Sent {len(sends)} emails (forced delivery to kohane@gmail.com).", "success")
+        _log_event(
+            conn,
+            campaign=campaign,
+            event="send_emails",
+            success=True,
+            message=f"Sent {len(sends)} messages",
+        )
         return redirect(url_for("master_view", campaign_key=campaign_key))
 
     @app.get("/campaigns/<campaign_key>/email-preview")

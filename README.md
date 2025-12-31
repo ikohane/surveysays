@@ -126,6 +126,7 @@ Note: your staging may have an additional Cloudflare WAF rule (IP allow-list) fo
 If you push the same `campaignKey` to Cloudflare multiple times, Cloudflare will generate a new token set each time. The local Admin app retains full push history and shows:
 - **Latest tokens (one per email)** for emailing
 - **History (by push/wave)** for debugging and audits
+- **Event log** (Master view) shows the most recent user actions, their campaign context, status (success/failure), and any error message.
 - CSV exports:
   - Latest: **Download latest cloud tokens CSV**
   - Full history: **Download tokens history CSV**

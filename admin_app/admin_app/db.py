@@ -166,6 +166,19 @@ CREATE TABLE IF NOT EXISTS invitation_variants (
 CREATE INDEX IF NOT EXISTS idx_invitation_variants_campaign_id ON invitation_variants(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_invitation_variants_email ON invitation_variants(email);
 CREATE INDEX IF NOT EXISTS idx_invitation_variants_hash ON invitation_variants(questionnaire_hash);
+
+CREATE TABLE IF NOT EXISTS event_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaign_id INTEGER,
+  campaign_key TEXT,
+  event TEXT NOT NULL,
+  status TEXT NOT NULL CHECK(status IN ('success','failure')),
+  message TEXT,
+  created_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_log_campaign_id ON event_log(campaign_id);
 """
 
 
@@ -1183,6 +1196,49 @@ def get_last_cloud_push(
         """,
         (campaign_id, cloud_base_url),
     ).fetchone()
+
+
+def record_event(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int | None,
+    campaign_key: str | None,
+    event: str,
+    success: bool,
+    message: str | None = None,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO event_log (campaign_id, campaign_key, event, status, message)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (
+            campaign_id,
+            campaign_key,
+            event,
+            "success" if success else "failure",
+            message,
+        ),
+    )
+
+
+def list_events(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int | None = None,
+    limit: int = 25,
+) -> list[sqlite3.Row]:
+    q = """
+    SELECT campaign_key, event, status, message, created_at
+    FROM event_log
+    """
+    params: list[Any] = []
+    if campaign_id is not None:
+        q += "WHERE campaign_id = ? "
+        params.append(campaign_id)
+    q += "ORDER BY created_at DESC LIMIT ? "
+    params.append(limit)
+    return list(conn.execute(q, tuple(params)).fetchall())
 
 
 def report_rows(

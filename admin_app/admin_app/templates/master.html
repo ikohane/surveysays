@@ -249,6 +249,45 @@
   </div>
 
   <div class="card">
+    <h3 style="margin-top:0;">Event log</h3>
+    <div class="muted">Recent user actions per campaign (success/failure). Each row shows the latest 25, most recent first.</div>
+    <div style="height: 10px;"></div>
+    <div style="max-height: 300px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Campaign</th>
+            <th>Event</th>
+            <th>Status</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in event_log %}
+            <tr>
+              <td>{{ row['created_at'] }}</td>
+              <td>{{ row['campaign_key'] or 'global' }}</td>
+              <td><code>{{ row['event'] }}</code></td>
+              <td>
+                {% if row['status'] == 'success' %}
+                  <span style="color:#0f8f3a;font-weight:600;">success</span>
+                {% else %}
+                  <span style="color:#b91c1c;font-weight:600;">failure</span>
+                {% endif %}
+              </td>
+              <td>{{ row['message'] or '' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if event_log|length == 0 %}
+        <div class="muted" style="padding: 10px 12px;">No events logged yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
     <h3 style="margin-top:0;">Recommended first-time flow</h3>
     <ol style="margin: 0; padding-left: 18px;">
       <li>Import cases/recipients (once)</li>

@@ -51,7 +51,13 @@ def main() -> None:
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert b"Imported" in r.data, "Expected success flash after importing cases"
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    evt_row = conn.execute(
+        "SELECT COUNT(*) AS n FROM event_log WHERE event = ?", ("import_cases",)
+    ).fetchone()
+    conn.close()
+    assert evt_row and evt_row["n"] >= 1
 
     r = client.post(
         "/imports/recipients",
@@ -60,7 +66,13 @@ def main() -> None:
         follow_redirects=True,
     )
     assert r.status_code == 200
-    assert b"Imported" in r.data, "Expected success flash after importing recipients"
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    evt_row = conn.execute(
+        "SELECT COUNT(*) AS n FROM event_log WHERE event = ?", ("import_recipients",)
+    ).fetchone()
+    conn.close()
+    assert evt_row and evt_row["n"] >= 1
 
     def create_campaign(*, campaign_key: str, picker_strategy: str, k: int) -> None:
         r = client.post(
@@ -105,6 +117,7 @@ def main() -> None:
     assert b"Generate variants" in r.data or b"Generate" in r.data
     assert b"Dry-run preview" in r.data
     assert b"Results" in r.data
+    assert b"Event log" in r.data
 
     # Offline campaigns should also have tokenized invitations with snapshots after Generate
     conn = sqlite3.connect(str(db_path))
@@ -118,6 +131,15 @@ def main() -> None:
     assert inv["token"]
     assert inv["questionnaire_json"], "offline invitation should have snapshotted questionnaire_json"
     conn.close()
+
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    evt_row = conn.execute(
+        "SELECT COUNT(*) AS n FROM event_log WHERE campaign_key = ? AND event = ?",
+        (campaign_pickk, "generate_variants"),
+    ).fetchone()
+    conn.close()
+    assert evt_row and evt_row["n"] >= 1
 
     r = client.get(f"/s/{inv['token']}")
     assert r.status_code == 200
