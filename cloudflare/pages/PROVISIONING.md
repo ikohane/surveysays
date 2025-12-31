@@ -5,43 +5,91 @@ This deploy uses **Cloudflare Pages + Pages Functions** with a **D1** DB binding
 ### 0) Prereqs
 - `hvp.global` is already in Cloudflare.
 - This repo is connected to GitHub (`ikohane/surveysays`).
+- You can access the Pages project in Cloudflare (account `Kohane@gmail.com's Account`).
+
+### What you get (v0.5 cloud scope)
+- Respondent page: `GET /s/<token>`
+- API:
+  - `GET /api/survey/<token>`
+  - `POST /api/submit/<token>` (409 on repeat submission)
+- Admin (bearer token):
+  - `GET /api/admin/ping`
+  - `POST /api/admin/upload` (ingests **bulk invitations JSON** and **returns tokens**)
+  - `GET /api/admin/export/<campaignKey>`
 
 ### 1) Create D1 database + apply schema
-Option A (Dashboard):
-- Cloudflare Dashboard → **D1** → **Create database** → name `surveysays_staging`
-- Open the DB → **Console** → paste and run [`schema.sql`](schema.sql)
+Dashboard:
+- Cloudflare Dashboard → **Developer Platform** → **D1**
+- **Create database** → name: `surveysays_staging`
+- Open the DB → **Console / Query**
+- Paste and run [`schema.sql`](schema.sql)
 
-Option B (wrangler CLI):
-- Install `wrangler` (v3+)
-- Create DB:
-  - `wrangler d1 create surveysays_staging`
-- Copy the returned `database_id` into [`wrangler.toml`](wrangler.toml)
-- Apply schema:
-  - `wrangler d1 execute surveysays_staging --file=./schema.sql`
+Note: you will need the D1 **Database ID (UUID)** if your Pages project is configured to manage bindings via `wrangler.toml`.
 
 ### 2) Create Pages project (monorepo root)
-- Cloudflare Dashboard → **Pages** → **Create a project** → connect GitHub → select `surveysays`
-- **Root directory**: `cloudflare/pages`
-- **Build command**: (empty / none)
-- **Build output directory**: `public`
+Cloudflare Dashboard → **Workers & Pages** → **Create application** → **Pages**:
+- Choose **Import an existing Git repository**
+- Select repo: `ikohane/surveysays`
+- **Project name**: `surveysays` (or `surveysays-staging`)
+- **Production branch**: `main`
+- **Build settings**:
+  - Framework preset: `None`
+  - Build command: *(empty / none)*
+  - Build output directory: `public`
+  - Root directory (advanced): `cloudflare/pages`
 
-### 3) Bind D1 to Pages
-- Pages project → **Settings** → **Functions** → **D1 database bindings**
-- Add binding:
-  - Variable name: `DB`
-  - Database: `surveysays_staging`
+### 3) Bind D1 to Pages Functions (`DB`)
+There are **two** ways to bind D1. Your project may be in either mode.
+
+#### Mode A: bindings managed by `wrangler.toml` (common)
+You’ll see a tooltip like: “Bindings for this project are being managed through `wrangler.toml`”.
+
+- Ensure [`wrangler.toml`](wrangler.toml) includes the real D1 UUID:
+  - `[[d1_databases]] binding="DB" database_name="surveysays_staging" database_id="<UUID>"`
+- Commit/push and let Pages redeploy.
+
+#### Mode B: bindings managed in the Dashboard
+- Pages project → **Settings** → **Bindings**
+- Choose environment: **Production**
+- Add D1 binding:
+  - **Name**: `DB`
+  - **Database**: `surveysays_staging`
 
 ### 4) Set Admin token (required)
-- Pages project → **Settings** → **Environment variables**
-- Add variable:
-  - `ADMIN_TOKEN`: choose a long random string
+- Pages project → **Settings** → **Variables and Secrets**
+- Add **Secret**:
+  - Name: `ADMIN_TOKEN`
+  - Value: a long random string
 
 All admin endpoints require:
 - `Authorization: Bearer <ADMIN_TOKEN>`
 
+You can generate a good token locally:
+
+```bash
+python3 - <<'PY'
+import secrets
+print(secrets.token_urlsafe(32))
+PY
+```
+
+### 5) Verify DB binding + auth
+
+```bash
+export ADMIN_TOKEN='...'
+curl -sS -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+  "https://study-staging.hvp.global/api/admin/ping"
+```
+
+Expected: `{"ok": true, ...}` and `envKeys` includes `DB`.
+
 ### 5) Attach custom domain
 - Pages project → **Custom domains** → add `study-staging.hvp.global`
-- If prompted, Cloudflare will create the needed DNS record.
+- If Cloudflare shows CNAME instructions, create the record in **Cloudflare DNS** (since DNS is already “Full”):
+  - Type: `CNAME`
+  - Name: `study-staging`
+  - Target: `surveysays.pages.dev`
+  - Proxy: **Proxied** (orange cloud)
 
 ### 6) Upload invitations payload (generates tokens)
 From your laptop (where you have the JSON file):
@@ -66,5 +114,10 @@ curl -sS \
   -H "Authorization: Bearer ${ADMIN_TOKEN}" \
   "https://study-staging.hvp.global/api/admin/export/<campaignKey>"
 ```
+
+### Troubleshooting
+- **Build log shows an older commit**: “Retry deployment” retries the *same* commit. Deploy the latest `main` commit instead.
+- **Error 8000022 Invalid database UUID**: your Pages build is reading a placeholder D1 UUID. Fix the D1 binding (Mode A or B above) and redeploy.
+- **`/api/admin/ping` returns `Missing D1 binding 'DB'`**: the D1 binding is not attached to the running environment (often Production vs Preview mismatch), or bindings are `wrangler.toml`-managed but missing the UUID.
 
 

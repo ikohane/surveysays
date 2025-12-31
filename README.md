@@ -81,8 +81,23 @@ The local simulated respondent page (`/s/<token>`) renders an HTML form and post
 
 From the project plan (`.cursor/plans/qgen-local-admin.plan.md`), the next parallel steps to take once local authoring is stable:
 
-- **Cloudflare**: add the `hvp.global` zone; plan `study.hvp.global` hosting (Cloudflare Pages + Cloudflare Access for Admin UI).
+- **Cloudflare**: deploy a staging site on `study-staging.hvp.global` using Cloudflare Pages + Pages Functions + D1, then add Cloudflare Access to protect admin workflows. See the Cloudflare docs in [`cloudflare/pages/PROVISIONING.md`](cloudflare/pages/PROVISIONING.md).
 - **Resend**: verify domain + sender for deliverability so the system can email invitations at scale.
+
+## Cloudflare (staging, v0.5)
+
+We ship a minimal cloud slice for v0.5: **respondent + API only** (no cloud Admin UI yet). You continue to use the local Admin app to generate a bulk invitations JSON payload, then upload it to Cloudflare which returns per-email tokens.
+
+- **Docs**: [`cloudflare/pages/PROVISIONING.md`](cloudflare/pages/PROVISIONING.md)
+- **Respondent**:
+  - `GET /s/<token>` (survey page)
+- **API**:
+  - `GET /api/survey/<token>`
+  - `POST /api/submit/<token>` (returns **409** on repeat submission)
+- **Admin (bearer)**:
+  - `GET /api/admin/ping`
+  - `POST /api/admin/upload` (ingests bulk payload, returns `{email, token}`)
+  - `GET /api/admin/export/<campaignKey>`
 
 ## Run qGen directly (CLI)
 
