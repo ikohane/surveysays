@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import certifi
 import json
 import os
 import time
+import ssl
 import urllib.error
 import urllib.request
 from typing import Any
@@ -34,7 +36,12 @@ def _request_json(*, method: str, path: str, body: dict[str, Any] | None) -> dic
     req.add_header("Authorization", f"Bearer {api_key}")
     req.add_header("Content-Type", "application/json")
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        try:
+            cafile = certifi.where()
+        except Exception:
+            cafile = None
+        ctx = ssl.create_default_context(cafile=cafile) if cafile else ssl.create_default_context()
+        with urllib.request.urlopen(req, timeout=20, context=ctx) as resp:
             raw = resp.read().decode("utf-8")
             return json.loads(raw) if raw else {}
     except urllib.error.HTTPError as e:

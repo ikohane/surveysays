@@ -132,6 +132,7 @@ If you push the same `campaignKey` to Cloudflare multiple times, Cloudflare will
 
 #### TLS / certificate errors (macOS/Homebrew Python)
 If you see `CERTIFICATE_VERIFY_FAILED` when pushing to Cloudflare, upgrade/install `certifi` and re-run. The Admin app prefers `certifi`’s CA bundle for outbound HTTPS.
+The same fix also covers Resend API calls (`create_template`, `send_email_with_template`) when the dashboard complained about SSL.
 
 #### Local DB migration note (push history)
 If you pulled a version that introduced “push history” and your local Admin server fails to start with a SQLite schema error, `git pull` again and restart. If you’re still stuck, you can move aside your local DB at `out/local_admin.sqlite3` (you’ll lose local state).
