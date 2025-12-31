@@ -115,6 +115,9 @@ Then open the campaign **Master view** and use **“Push to Cloudflare (generate
 
 Note: your staging currently has an additional Cloudflare WAF rule (IP allow-list) for `/api/admin/*`, so pushing will only work from an allowed IP.
 
+#### TLS / certificate errors (macOS/Homebrew Python)
+If you see `CERTIFICATE_VERIFY_FAILED` when pushing to Cloudflare, upgrade/install `certifi` and re-run. The Admin app prefers `certifi`’s CA bundle for outbound HTTPS.
+
 ## Run qGen directly (CLI)
 
 The CLI currently supports **Pick-K from `cases.csv`** (default) and outputs **K question pairs** per recipient via `--k`.

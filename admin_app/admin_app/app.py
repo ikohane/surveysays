@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import ssl
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -108,7 +109,18 @@ def _cloud_post_json(*, url: str, bearer_token: str, payload_obj: Any, timeout_s
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=timeout_sec) as resp:
+        # macOS/Homebrew Python often lacks a system CA bundle; prefer certifi if available.
+        cafile: str | None = None
+        try:
+            import certifi  # type: ignore
+
+            cafile = certifi.where()
+        except Exception:
+            cafile = None
+
+        ctx = ssl.create_default_context(cafile=cafile) if cafile else ssl.create_default_context()
+
+        with urllib.request.urlopen(req, timeout=timeout_sec, context=ctx) as resp:
             body = resp.read().decode("utf-8", errors="replace")
             try:
                 return json.loads(body)
