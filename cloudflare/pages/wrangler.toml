@@ -2,3 +2,8 @@ name = "surveysays-staging"
 compatibility_date = "2025-12-30"
 pages_build_output_dir = "public"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "surveysays_staging"
+database_id = "097a7c84-c533-42a3-a811-e0352353684f"
+
