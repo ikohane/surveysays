@@ -4,18 +4,26 @@ export async function ensureCampaignId(env: Env, campaignKey: string): Promise<n
   const key = campaignKey.trim();
   if (!key) throw new Error("campaignKey required");
 
-  const existing = await env.DB.prepare("SELECT id FROM campaigns WHERE campaign_key = ?")
-    .bind(key)
-    .first();
-  if (existing && typeof existing.id === "number") return existing.id;
-
-  const res = await env.DB.prepare("INSERT INTO campaigns (campaign_key) VALUES (?)").bind(key).run();
-  // D1 returns meta.last_row_id
-  const id = res?.meta?.last_row_id;
-  if (typeof id !== "number") {
-    throw new Error("Failed to create campaign");
+  // D1 may return `id` as number or string depending on driver layer.
+  const existing = await env.DB.prepare("SELECT id FROM campaigns WHERE campaign_key = ?").bind(key).first();
+  if (existing && (existing.id === 0 || existing.id)) {
+    const n = Number(existing.id);
+    if (Number.isFinite(n) && n > 0) return n;
   }
-  return id;
+
+  try {
+    const res = await env.DB.prepare("INSERT INTO campaigns (campaign_key) VALUES (?)").bind(key).run();
+    // D1 returns meta.last_row_id
+    const id = res?.meta?.last_row_id;
+    if (typeof id === "number" && id > 0) return id;
+  } catch (e: any) {
+    // Likely a race/duplicate campaign_key; fall through to re-select.
+  }
+
+  const again = await env.DB.prepare("SELECT id FROM campaigns WHERE campaign_key = ?").bind(key).first();
+  const n = Number(again?.id);
+  if (Number.isFinite(n) && n > 0) return n;
+  throw new Error("Failed to create campaign");
 }
 
 export async function getInvitationByToken(env: Env, token: string): Promise<any | null> {
