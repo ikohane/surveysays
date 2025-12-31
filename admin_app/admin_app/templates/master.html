@@ -117,7 +117,7 @@
         Target: <code>{{ cloud_base_url }}</code> · Upload endpoint: <code>/api/admin/upload</code>
       </div>
       <div class="muted" style="margin-top: 6px;">
-        Note: Cloudflare generates tokens on upload. Local stores the returned <code>{email, token}</code> mapping for emailing and reporting.
+        Note: Cloudflare generates tokens on upload. Each push is a new <strong>wave</strong>; history is retained.
       </div>
       <div style="height: 10px;"></div>
       <div class="actions">
@@ -125,7 +125,10 @@
           <button type="submit">Push to Cloudflare (generate tokens)</button>
         </form>
         <a href="{{ url_for('cloud_tokens_csv', campaign_key=campaign['campaign_key']) }}">
-          <button class="secondary" type="button">Download cloud tokens CSV</button>
+          <button class="secondary" type="button">Download latest cloud tokens CSV</button>
+        </a>
+        <a href="{{ url_for('cloud_tokens_history_csv', campaign_key=campaign['campaign_key']) }}">
+          <button class="secondary" type="button">Download tokens history CSV</button>
         </a>
       </div>
       <div style="height: 10px;"></div>
@@ -138,6 +141,7 @@
       </div>
 
       <div style="height: 10px;"></div>
+      <h4 style="margin: 0 0 8px 0;">Latest tokens (one per email)</h4>
       <div style="max-height: 320px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
         <table>
           <thead>
@@ -149,7 +153,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for r in cloud_tokens %}
+            {% for r in cloud_latest_tokens %}
               <tr>
                 <td><code>{{ r['email'] }}</code></td>
                 <td><code style="font-size:12px;">{{ r['cloud_token'][:8] }}…</code></td>
@@ -159,10 +163,54 @@
             {% endfor %}
           </tbody>
         </table>
-        {% if cloud_tokens|length == 0 %}
+        {% if cloud_latest_tokens|length == 0 %}
           <div class="muted" style="padding: 10px 12px;">No cloud tokens stored yet.</div>
         {% endif %}
       </div>
+
+      <div style="height: 12px;"></div>
+      <details>
+        <summary style="cursor: pointer; font-weight: 700;">History (by push/wave)</summary>
+        <div class="muted" style="margin-top: 8px;">Each push creates a new token set; older links may still exist in Cloudflare and may already be submitted (409).</div>
+        <div style="height: 10px;"></div>
+
+        {% for item in cloud_push_history %}
+          {% set p = item['push'] %}
+          <details style="margin-bottom: 10px;">
+            <summary style="cursor: pointer;">
+              <span class="pill">Wave</span>
+              <strong>{{ p['created_at'] }}</strong>
+              · tokens: {{ p['n_tokens'] }}
+              · hash: <code>{{ p['request_hash'][:10] }}…</code>
+            </summary>
+            <div style="height: 10px;"></div>
+            <div style="max-height: 260px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Token</th>
+                    <th>Link</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in item['tokens'] %}
+                    <tr>
+                      <td><code>{{ r['email'] }}</code></td>
+                      <td><code style="font-size:12px;">{{ r['cloud_token'] }}</code></td>
+                      <td><a href="{{ cloud_base_url }}/s/{{ r['cloud_token'] }}"><code>/s/{{ r['cloud_token'][:8] }}…</code></a></td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        {% endfor %}
+
+        {% if cloud_push_history|length == 0 %}
+          <div class="muted">No push history yet.</div>
+        {% endif %}
+      </details>
     {% endif %}
   </div>
 

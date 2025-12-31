@@ -115,6 +115,11 @@ Then open the campaign **Master view** and use **“Push to Cloudflare (generate
 
 Note: your staging currently has an additional Cloudflare WAF rule (IP allow-list) for `/api/admin/*`, so pushing will only work from an allowed IP.
 
+#### Multi-push (“waves”) semantics
+If you push the same `campaignKey` to Cloudflare multiple times, Cloudflare will generate a new token set each time. The local Admin app retains full push history and shows:
+- **Latest tokens (one per email)** for emailing
+- **History (by push/wave)** for debugging and audits
+
 #### TLS / certificate errors (macOS/Homebrew Python)
 If you see `CERTIFICATE_VERIFY_FAILED` when pushing to Cloudflare, upgrade/install `certifi` and re-run. The Admin app prefers `certifi`’s CA bundle for outbound HTTPS.
 

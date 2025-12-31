@@ -171,6 +171,20 @@ CREATE INDEX IF NOT EXISTS idx_invitation_variants_hash ON invitation_variants(q
 -- Cloud uploads (Cloudflare staging/prod token mappings)
 -- -------------------------
 
+CREATE TABLE IF NOT EXISTS cloud_pushes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaign_id INTEGER NOT NULL,
+  cloud_base_url TEXT NOT NULL,
+  request_hash TEXT NOT NULL,
+  response_json TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_cloud_pushes_campaign_id ON cloud_pushes(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_cloud_pushes_created_at ON cloud_pushes(created_at);
+
+-- Legacy table retained for backward compatibility / migration.
 CREATE TABLE IF NOT EXISTS cloud_uploads (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   campaign_id INTEGER NOT NULL,
@@ -186,17 +200,20 @@ CREATE INDEX IF NOT EXISTS idx_cloud_uploads_created_at ON cloud_uploads(created
 
 CREATE TABLE IF NOT EXISTS cloud_invitation_tokens (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  push_id INTEGER NOT NULL,
   campaign_id INTEGER NOT NULL,
   cloud_base_url TEXT NOT NULL,
   email TEXT NOT NULL,
   cloud_token TEXT NOT NULL,
   uploaded_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
-  UNIQUE (campaign_id, cloud_base_url, email),
-  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+  UNIQUE (push_id, email),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+  FOREIGN KEY (push_id) REFERENCES cloud_pushes(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_campaign_id ON cloud_invitation_tokens(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_email ON cloud_invitation_tokens(email);
+CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_push_id ON cloud_invitation_tokens(push_id);
 """
 
 
@@ -253,9 +270,22 @@ def _ensure_question_stats_columns(conn: sqlite3.Connection) -> None:
 
 
 def _ensure_cloud_tables(conn: sqlite3.Connection) -> None:
-    # Add-only migrations: create tables if missing.
+    # Ensure new tables exist.
     conn.executescript(
         f"""
+        CREATE TABLE IF NOT EXISTS cloud_pushes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL,
+          cloud_base_url TEXT NOT NULL,
+          request_hash TEXT NOT NULL,
+          response_json TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_cloud_pushes_campaign_id ON cloud_pushes(campaign_id);
+        CREATE INDEX IF NOT EXISTS idx_cloud_pushes_created_at ON cloud_pushes(created_at);
+
+        -- Legacy table retained for migration.
         CREATE TABLE IF NOT EXISTS cloud_uploads (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           campaign_id INTEGER NOT NULL,
@@ -267,21 +297,153 @@ def _ensure_cloud_tables(conn: sqlite3.Connection) -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_cloud_uploads_campaign_id ON cloud_uploads(campaign_id);
         CREATE INDEX IF NOT EXISTS idx_cloud_uploads_created_at ON cloud_uploads(created_at);
+        """
+    )
 
-        CREATE TABLE IF NOT EXISTS cloud_invitation_tokens (
+    # Migrate tokens table to per-push (append-only) if needed.
+    def _table_exists(name: str) -> bool:
+        r = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (name,),
+        ).fetchone()
+        return r is not None
+
+    def _table_has_column(table: str, col: str) -> bool:
+        rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+        return any(str(r["name"]) == col for r in rows)
+
+    if not _table_exists("cloud_invitation_tokens"):
+        conn.executescript(
+            f"""
+            CREATE TABLE cloud_invitation_tokens (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              push_id INTEGER NOT NULL,
+              campaign_id INTEGER NOT NULL,
+              cloud_base_url TEXT NOT NULL,
+              email TEXT NOT NULL,
+              cloud_token TEXT NOT NULL,
+              uploaded_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+              UNIQUE (push_id, email),
+              FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+              FOREIGN KEY (push_id) REFERENCES cloud_pushes(id) ON DELETE CASCADE
+            );
+            CREATE INDEX idx_cloud_invitation_tokens_campaign_id ON cloud_invitation_tokens(campaign_id);
+            CREATE INDEX idx_cloud_invitation_tokens_email ON cloud_invitation_tokens(email);
+            CREATE INDEX idx_cloud_invitation_tokens_push_id ON cloud_invitation_tokens(push_id);
+            """
+        )
+        return
+
+    if _table_has_column("cloud_invitation_tokens", "push_id"):
+        # Already migrated.
+        return
+
+    # Legacy schema exists (unique per email); migrate to append-only.
+    conn.execute("ALTER TABLE cloud_invitation_tokens RENAME TO cloud_invitation_tokens_legacy")
+    conn.executescript(
+        f"""
+        CREATE TABLE cloud_invitation_tokens (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          push_id INTEGER NOT NULL,
           campaign_id INTEGER NOT NULL,
           cloud_base_url TEXT NOT NULL,
           email TEXT NOT NULL,
           cloud_token TEXT NOT NULL,
           uploaded_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
-          UNIQUE (campaign_id, cloud_base_url, email),
-          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+          UNIQUE (push_id, email),
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+          FOREIGN KEY (push_id) REFERENCES cloud_pushes(id) ON DELETE CASCADE
         );
-        CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_campaign_id ON cloud_invitation_tokens(campaign_id);
-        CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_email ON cloud_invitation_tokens(email);
+        CREATE INDEX idx_cloud_invitation_tokens_campaign_id ON cloud_invitation_tokens(campaign_id);
+        CREATE INDEX idx_cloud_invitation_tokens_email ON cloud_invitation_tokens(email);
+        CREATE INDEX idx_cloud_invitation_tokens_push_id ON cloud_invitation_tokens(push_id);
         """
     )
+
+    # Backfill: create one push per (campaign_id, cloud_base_url) using latest cloud_uploads row if present.
+    latest_uploads = list(
+        conn.execute(
+            """
+            SELECT cu.*
+            FROM cloud_uploads cu
+            JOIN (
+              SELECT campaign_id, cloud_base_url, MAX(created_at) AS max_created_at
+              FROM cloud_uploads
+              GROUP BY campaign_id, cloud_base_url
+            ) x
+              ON x.campaign_id = cu.campaign_id
+             AND x.cloud_base_url = cu.cloud_base_url
+             AND x.max_created_at = cu.created_at
+            """
+        ).fetchall()
+    )
+
+    push_id_by_key: dict[tuple[int, str], int] = {}
+    for r in latest_uploads:
+        key = (int(r["campaign_id"]), str(r["cloud_base_url"]))
+        res = conn.execute(
+            """
+            INSERT INTO cloud_pushes (campaign_id, cloud_base_url, request_hash, response_json, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                int(r["campaign_id"]),
+                str(r["cloud_base_url"]),
+                str(r["request_hash"]),
+                str(r["response_json"]),
+                str(r["created_at"]),
+            ),
+        )
+        push_id_by_key[key] = int(res.lastrowid)
+
+    # For any legacy tokens without a corresponding upload record, create a synthetic push.
+    legacy_keys = list(
+        conn.execute(
+            """
+            SELECT DISTINCT campaign_id, cloud_base_url
+            FROM cloud_invitation_tokens_legacy
+            """
+        ).fetchall()
+    )
+    for r in legacy_keys:
+        key = (int(r["campaign_id"]), str(r["cloud_base_url"]))
+        if key in push_id_by_key:
+            continue
+        res = conn.execute(
+            """
+            INSERT INTO cloud_pushes (campaign_id, cloud_base_url, request_hash, response_json)
+            VALUES (?, ?, ?, ?)
+            """,
+            (key[0], key[1], "legacy", "{}"),
+        )
+        push_id_by_key[key] = int(res.lastrowid)
+
+    # Copy latest-known tokens into new table attached to the push for that campaign/base_url.
+    rows = conn.execute(
+        """
+        SELECT campaign_id, cloud_base_url, email, cloud_token, uploaded_at
+        FROM cloud_invitation_tokens_legacy
+        """
+    ).fetchall()
+    for r in rows:
+        key = (int(r["campaign_id"]), str(r["cloud_base_url"]))
+        push_id = push_id_by_key.get(key)
+        if not push_id:
+            continue
+        conn.execute(
+            """
+            INSERT INTO cloud_invitation_tokens (push_id, campaign_id, cloud_base_url, email, cloud_token, uploaded_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                push_id,
+                int(r["campaign_id"]),
+                str(r["cloud_base_url"]),
+                str(r["email"]),
+                str(r["cloud_token"]),
+                str(r["uploaded_at"]),
+            ),
+        )
 
 
 def _ensure_submission_tables(conn: sqlite3.Connection) -> None:
@@ -933,33 +1095,38 @@ def list_invitation_ledger_rows(conn: sqlite3.Connection, *, campaign_id: int) -
     )
 
 
-def record_cloud_upload(
+def insert_cloud_push(
     conn: sqlite3.Connection,
     *,
     campaign_id: int,
     cloud_base_url: str,
     request_hash: str,
     response_json: str,
-) -> None:
-    conn.execute(
+) -> int:
+    """
+    Creates a new push/wave and returns push_id.
+    """
+    cur = conn.execute(
         """
-        INSERT INTO cloud_uploads (campaign_id, cloud_base_url, request_hash, response_json)
+        INSERT INTO cloud_pushes (campaign_id, cloud_base_url, request_hash, response_json)
         VALUES (?, ?, ?, ?)
         """,
         (campaign_id, cloud_base_url, request_hash, response_json),
     )
+    return int(cur.lastrowid)
 
 
-def upsert_cloud_invitation_tokens(
+def insert_cloud_push_tokens(
     conn: sqlite3.Connection,
     *,
+    push_id: int,
     campaign_id: int,
     cloud_base_url: str,
     tokens: list[dict[str, str]],
 ) -> int:
     """
     tokens: list of {email, token}
-    Returns number of rows upserted.
+    Returns number of rows inserted.
     """
     n = 0
     for t in tokens:
@@ -969,19 +1136,16 @@ def upsert_cloud_invitation_tokens(
             continue
         conn.execute(
             """
-            INSERT INTO cloud_invitation_tokens (campaign_id, cloud_base_url, email, cloud_token)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT(campaign_id, cloud_base_url, email) DO UPDATE SET
-              cloud_token=excluded.cloud_token,
-              uploaded_at=CURRENT_TIMESTAMP
+            INSERT INTO cloud_invitation_tokens (push_id, campaign_id, cloud_base_url, email, cloud_token)
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (campaign_id, cloud_base_url, email, token),
+            (push_id, campaign_id, cloud_base_url, email, token),
         )
         n += 1
     return n
 
 
-def list_cloud_invitation_tokens(
+def list_cloud_pushes(
     conn: sqlite3.Connection,
     *,
     campaign_id: int,
@@ -990,17 +1154,64 @@ def list_cloud_invitation_tokens(
     return list(
         conn.execute(
             """
-            SELECT email, cloud_token, uploaded_at
-            FROM cloud_invitation_tokens
-            WHERE campaign_id = ? AND cloud_base_url = ?
-            ORDER BY email
+            SELECT
+              p.id AS push_id,
+              p.created_at,
+              p.request_hash,
+              (SELECT COUNT(*) FROM cloud_invitation_tokens t WHERE t.push_id = p.id) AS n_tokens
+            FROM cloud_pushes p
+            WHERE p.campaign_id = ? AND p.cloud_base_url = ?
+            ORDER BY p.created_at DESC
             """,
             (campaign_id, cloud_base_url),
         ).fetchall()
     )
 
 
-def get_last_cloud_upload(
+def list_cloud_tokens_for_push(conn: sqlite3.Connection, *, push_id: int) -> list[sqlite3.Row]:
+    return list(
+        conn.execute(
+            """
+            SELECT email, cloud_token, uploaded_at
+            FROM cloud_invitation_tokens
+            WHERE push_id = ?
+            ORDER BY email
+            """,
+            (push_id,),
+        ).fetchall()
+    )
+
+
+def list_cloud_latest_tokens(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    cloud_base_url: str,
+) -> list[sqlite3.Row]:
+    """
+    Latest token per email (for emailing). Computed from history.
+    """
+    return list(
+        conn.execute(
+            """
+            SELECT t.email, t.cloud_token, t.uploaded_at, t.push_id
+            FROM cloud_invitation_tokens t
+            JOIN (
+              SELECT email, MAX(uploaded_at) AS max_uploaded_at
+              FROM cloud_invitation_tokens
+              WHERE campaign_id = ? AND cloud_base_url = ?
+              GROUP BY email
+            ) x
+              ON x.email = t.email AND x.max_uploaded_at = t.uploaded_at
+            WHERE t.campaign_id = ? AND t.cloud_base_url = ?
+            ORDER BY t.email
+            """,
+            (campaign_id, cloud_base_url, campaign_id, cloud_base_url),
+        ).fetchall()
+    )
+
+
+def get_last_cloud_push(
     conn: sqlite3.Connection,
     *,
     campaign_id: int,
@@ -1008,8 +1219,8 @@ def get_last_cloud_upload(
 ) -> sqlite3.Row | None:
     return conn.execute(
         """
-        SELECT created_at, request_hash
-        FROM cloud_uploads
+        SELECT created_at, request_hash, id AS push_id
+        FROM cloud_pushes
         WHERE campaign_id = ? AND cloud_base_url = ?
         ORDER BY created_at DESC
         LIMIT 1

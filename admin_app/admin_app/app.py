@@ -44,14 +44,16 @@ from .db import (
     mark_invitation_opened,
     populate_invitations_from_variants,
     report_rows,
-    record_cloud_upload,
     save_invitation_snapshot,
     single_select_choice_counts,
-    get_last_cloud_upload,
     insert_assignment,
-    list_cloud_invitation_tokens,
+    get_last_cloud_push,
+    insert_cloud_push,
+    insert_cloud_push_tokens,
+    list_cloud_latest_tokens,
+    list_cloud_pushes,
+    list_cloud_tokens_for_push,
     submission_cohort_counts,
-    upsert_cloud_invitation_tokens,
     upsert_campaign,
     upsert_cases,
     upsert_recipients,
@@ -776,10 +778,21 @@ def create_app() -> Flask:
             ledger_rows = list_invitation_ledger_rows(conn, campaign_id=campaign_id)
 
             cloud_last_upload = None
-            cloud_tokens = []
+            cloud_latest_tokens = []
+            cloud_push_history: list[dict[str, Any]] = []
             if cloud_base_url:
-                cloud_last_upload = get_last_cloud_upload(conn, campaign_id=campaign_id, cloud_base_url=cloud_base_url)
-                cloud_tokens = list_cloud_invitation_tokens(conn, campaign_id=campaign_id, cloud_base_url=cloud_base_url)
+                cloud_last_upload = get_last_cloud_push(conn, campaign_id=campaign_id, cloud_base_url=cloud_base_url)
+                cloud_latest_tokens = list_cloud_latest_tokens(
+                    conn, campaign_id=campaign_id, cloud_base_url=cloud_base_url
+                )
+                pushes = list_cloud_pushes(conn, campaign_id=campaign_id, cloud_base_url=cloud_base_url)
+                for p in pushes:
+                    cloud_push_history.append(
+                        {
+                            "push": p,
+                            "tokens": list_cloud_tokens_for_push(conn, push_id=int(p["push_id"])),
+                        }
+                    )
 
         return render_template(
             "master.html",
@@ -794,7 +807,8 @@ def create_app() -> Flask:
             ledger_rows=ledger_rows,
             cloud_base_url=cloud_base_url,
             cloud_last_upload=cloud_last_upload,
-            cloud_tokens=cloud_tokens,
+            cloud_latest_tokens=cloud_latest_tokens,
+            cloud_push_history=cloud_push_history,
         )
 
     @app.post("/campaigns/<campaign_key>/cloud/push")
@@ -863,19 +877,19 @@ def create_app() -> Flask:
             assert campaign is not None
             campaign_id = int(campaign["id"])
             response_json = json.dumps(resp_obj, ensure_ascii=False, indent=2)
-            record_cloud_upload(
+            push_id = insert_cloud_push(
                 conn,
                 campaign_id=campaign_id,
                 cloud_base_url=cloud_base_url,
                 request_hash=request_hash,
                 response_json=response_json,
             )
-            n = upsert_cloud_invitation_tokens(
-                conn, campaign_id=campaign_id, cloud_base_url=cloud_base_url, tokens=tokens
+            n = insert_cloud_push_tokens(
+                conn, push_id=push_id, campaign_id=campaign_id, cloud_base_url=cloud_base_url, tokens=tokens
             )
             conn.commit()
 
-        flash(f"Pushed to Cloudflare: stored {n} cloud tokens.", "success")
+        flash(f"Pushed to Cloudflare: created a new wave and stored {n} tokens.", "success")
         return redirect(url_for("master_view", campaign_key=campaign_key))
 
     @app.get("/campaigns/<campaign_key>/cloud/tokens.csv")
@@ -887,7 +901,7 @@ def create_app() -> Flask:
                 return Response("Campaign not found", status=404)
             if not cloud_base_url:
                 return Response("CLOUDFLARE_STUDY_BASE_URL not set", status=400)
-            rows = list_cloud_invitation_tokens(conn, campaign_id=int(campaign["id"]), cloud_base_url=cloud_base_url)
+            rows = list_cloud_latest_tokens(conn, campaign_id=int(campaign["id"]), cloud_base_url=cloud_base_url)
 
         # Minimal CSV (no external deps)
         lines = ["email,token,link"]
@@ -908,6 +922,48 @@ def create_app() -> Flask:
             status=200,
             mimetype="text/csv",
             headers={"Content-Disposition": f'attachment; filename=\"{campaign_key}.cloud_tokens.csv\"'},
+        )
+
+    @app.get("/campaigns/<campaign_key>/cloud/tokens_history.csv")
+    def cloud_tokens_history_csv(campaign_key: str) -> Response:
+        cloud_base_url = (os.environ.get("CLOUDFLARE_STUDY_BASE_URL") or "").strip().rstrip("/")
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                return Response("Campaign not found", status=404)
+            if not cloud_base_url:
+                return Response("CLOUDFLARE_STUDY_BASE_URL not set", status=400)
+            pushes = list_cloud_pushes(conn, campaign_id=int(campaign["id"]), cloud_base_url=cloud_base_url)
+            # Preload tokens per push
+            rows: list[tuple[str, str, str, str, str]] = []
+            for p in pushes:
+                toks = list_cloud_tokens_for_push(conn, push_id=int(p["push_id"]))
+                for t in toks:
+                    rows.append(
+                        (
+                            str(p["created_at"]),
+                            str(p["request_hash"]),
+                            str(t["email"]),
+                            str(t["cloud_token"]),
+                            f"{cloud_base_url}/s/{t['cloud_token']}",
+                        )
+                    )
+
+        lines = ["push_created_at,request_hash,email,token,link"]
+
+        def esc(s: str) -> str:
+            if any(ch in s for ch in [",", "\"", "\n", "\r"]):
+                return "\"" + s.replace("\"", "\"\"") + "\""
+            return s
+
+        for (created_at, request_hash, email, token, link) in rows:
+            lines.append(",".join([esc(created_at), esc(request_hash), esc(email), esc(token), esc(link)]))
+        body = "\n".join(lines) + "\n"
+        return Response(
+            body,
+            status=200,
+            mimetype="text/csv",
+            headers={"Content-Disposition": f'attachment; filename=\"{campaign_key}.cloud_tokens.history.csv\"'},
         )
 
     @app.post("/campaigns/<campaign_key>/email-settings")
