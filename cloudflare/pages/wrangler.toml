@@ -1,0 +1,14 @@
+name = "surveysays-staging"
+compatibility_date = "2025-12-30"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "surveysays_staging"
+database_id = "REPLACE_ME_IN_CLOUDFLARE_DASHBOARD"
+
+[vars]
+# Set ADMIN_TOKEN in Pages environment variables (do not commit real secrets).
+ADMIN_TOKEN = "REPLACE_ME"
+
+
