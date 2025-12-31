@@ -166,6 +166,37 @@ CREATE TABLE IF NOT EXISTS invitation_variants (
 CREATE INDEX IF NOT EXISTS idx_invitation_variants_campaign_id ON invitation_variants(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_invitation_variants_email ON invitation_variants(email);
 CREATE INDEX IF NOT EXISTS idx_invitation_variants_hash ON invitation_variants(questionnaire_hash);
+
+-- -------------------------
+-- Cloud uploads (Cloudflare staging/prod token mappings)
+-- -------------------------
+
+CREATE TABLE IF NOT EXISTS cloud_uploads (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaign_id INTEGER NOT NULL,
+  cloud_base_url TEXT NOT NULL,
+  request_hash TEXT NOT NULL,
+  response_json TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_cloud_uploads_campaign_id ON cloud_uploads(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_cloud_uploads_created_at ON cloud_uploads(created_at);
+
+CREATE TABLE IF NOT EXISTS cloud_invitation_tokens (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaign_id INTEGER NOT NULL,
+  cloud_base_url TEXT NOT NULL,
+  email TEXT NOT NULL,
+  cloud_token TEXT NOT NULL,
+  uploaded_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+  UNIQUE (campaign_id, cloud_base_url, email),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_campaign_id ON cloud_invitation_tokens(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_email ON cloud_invitation_tokens(email);
 """
 
 
@@ -187,6 +218,7 @@ class Db:
             _ensure_invitations_columns(conn)
             _ensure_question_stats_columns(conn)
             _ensure_submission_tables(conn)
+            _ensure_cloud_tables(conn)
 
 
 def _try_add_column(conn: sqlite3.Connection, table: str, column_def: str) -> None:
@@ -218,6 +250,38 @@ def _ensure_invitations_columns(conn: sqlite3.Connection) -> None:
 def _ensure_question_stats_columns(conn: sqlite3.Connection) -> None:
     _try_add_column(conn, "question_stats", "assigned_count INTEGER NOT NULL DEFAULT 0")
     _try_add_column(conn, "question_stats", "submitted_count INTEGER NOT NULL DEFAULT 0")
+
+
+def _ensure_cloud_tables(conn: sqlite3.Connection) -> None:
+    # Add-only migrations: create tables if missing.
+    conn.executescript(
+        f"""
+        CREATE TABLE IF NOT EXISTS cloud_uploads (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL,
+          cloud_base_url TEXT NOT NULL,
+          request_hash TEXT NOT NULL,
+          response_json TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_cloud_uploads_campaign_id ON cloud_uploads(campaign_id);
+        CREATE INDEX IF NOT EXISTS idx_cloud_uploads_created_at ON cloud_uploads(created_at);
+
+        CREATE TABLE IF NOT EXISTS cloud_invitation_tokens (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL,
+          cloud_base_url TEXT NOT NULL,
+          email TEXT NOT NULL,
+          cloud_token TEXT NOT NULL,
+          uploaded_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+          UNIQUE (campaign_id, cloud_base_url, email),
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_campaign_id ON cloud_invitation_tokens(campaign_id);
+        CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_email ON cloud_invitation_tokens(email);
+        """
+    )
 
 
 def _ensure_submission_tables(conn: sqlite3.Connection) -> None:
@@ -867,6 +931,91 @@ def list_invitation_ledger_rows(conn: sqlite3.Connection, *, campaign_id: int) -
             (campaign_id,),
         ).fetchall()
     )
+
+
+def record_cloud_upload(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    cloud_base_url: str,
+    request_hash: str,
+    response_json: str,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO cloud_uploads (campaign_id, cloud_base_url, request_hash, response_json)
+        VALUES (?, ?, ?, ?)
+        """,
+        (campaign_id, cloud_base_url, request_hash, response_json),
+    )
+
+
+def upsert_cloud_invitation_tokens(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    cloud_base_url: str,
+    tokens: list[dict[str, str]],
+) -> int:
+    """
+    tokens: list of {email, token}
+    Returns number of rows upserted.
+    """
+    n = 0
+    for t in tokens:
+        email = str(t.get("email") or "").strip().lower()
+        token = str(t.get("token") or "").strip()
+        if not email or not token:
+            continue
+        conn.execute(
+            """
+            INSERT INTO cloud_invitation_tokens (campaign_id, cloud_base_url, email, cloud_token)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(campaign_id, cloud_base_url, email) DO UPDATE SET
+              cloud_token=excluded.cloud_token,
+              uploaded_at=CURRENT_TIMESTAMP
+            """,
+            (campaign_id, cloud_base_url, email, token),
+        )
+        n += 1
+    return n
+
+
+def list_cloud_invitation_tokens(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    cloud_base_url: str,
+) -> list[sqlite3.Row]:
+    return list(
+        conn.execute(
+            """
+            SELECT email, cloud_token, uploaded_at
+            FROM cloud_invitation_tokens
+            WHERE campaign_id = ? AND cloud_base_url = ?
+            ORDER BY email
+            """,
+            (campaign_id, cloud_base_url),
+        ).fetchall()
+    )
+
+
+def get_last_cloud_upload(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    cloud_base_url: str,
+) -> sqlite3.Row | None:
+    return conn.execute(
+        """
+        SELECT created_at, request_hash
+        FROM cloud_uploads
+        WHERE campaign_id = ? AND cloud_base_url = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+        """,
+        (campaign_id, cloud_base_url),
+    ).fetchone()
 
 
 def report_rows(

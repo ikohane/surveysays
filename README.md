@@ -99,6 +99,22 @@ We ship a minimal cloud slice for v0.5: **respondent + API only** (no cloud Admi
   - `POST /api/admin/upload` (ingests bulk payload, returns `{email, token}`)
   - `GET /api/admin/export/<campaignKey>`
 
+### Programmatic push from the local Admin app (no manual download/upload)
+
+Set these env vars in the same shell where you run the local Admin server:
+- `CLOUDFLARE_STUDY_BASE_URL` (example: `https://study-staging.hvp.global`)
+- `CLOUDFLARE_ADMIN_TOKEN` (the Pages `ADMIN_TOKEN` secret)
+
+Then open the campaign **Master view** and use **“Push to Cloudflare (generate tokens)”**. The local app will:\n+- Build the bulk invitations payload in-memory\n+- POST to `{{CLOUDFLARE_STUDY_BASE_URL}}/api/admin/upload`\n+- Store the returned `{email, token}` mapping locally and show it as a ledger\n+- Provide a **Download cloud tokens CSV** button for emailing
+Then open the campaign **Master view** and use **“Push to Cloudflare (generate tokens)”**. The local app will:
+
+- Build the bulk invitations payload in-memory
+- POST to `${CLOUDFLARE_STUDY_BASE_URL}/api/admin/upload`
+- Store the returned `{email, token}` mapping locally and show it as a ledger
+- Provide a **Download cloud tokens CSV** button for emailing
+
+Note: your staging currently has an additional Cloudflare WAF rule (IP allow-list) for `/api/admin/*`, so pushing will only work from an allowed IP.
+
 ## Run qGen directly (CLI)
 
 The CLI currently supports **Pick-K from `cases.csv`** (default) and outputs **K question pairs** per recipient via `--k`.

@@ -101,6 +101,7 @@ def main() -> None:
     assert r.status_code == 200
     assert b"Master view" in r.data
     assert b"Invites ledger" in r.data
+    assert b"Cloudflare staging" in r.data
     assert b"Generate variants" in r.data or b"Generate" in r.data
     assert b"Dry-run preview" in r.data
     assert b"Results" in r.data
@@ -195,6 +196,7 @@ def main() -> None:
     assert r.status_code == 200
     assert b"Master view" in r.data
     assert b"Invites ledger" in r.data
+    assert b"Cloudflare staging" in r.data
     assert b"Prepare online_assign" in r.data
     assert b"Email (Resend) settings" in r.data
     assert b"Send invitation emails" in r.data

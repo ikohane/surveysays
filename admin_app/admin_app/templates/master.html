@@ -107,6 +107,66 @@
   </div>
 
   <div class="card">
+    <h3 style="margin-top:0;">Cloudflare staging (push variants → get tokens)</h3>
+    {% if not cloud_base_url %}
+      <div class="muted">
+        Not configured. Set <code>CLOUDFLARE_STUDY_BASE_URL</code> and <code>CLOUDFLARE_ADMIN_TOKEN</code> in your environment, then restart the local Admin server.
+      </div>
+    {% else %}
+      <div class="muted">
+        Target: <code>{{ cloud_base_url }}</code> · Upload endpoint: <code>/api/admin/upload</code>
+      </div>
+      <div class="muted" style="margin-top: 6px;">
+        Note: Cloudflare generates tokens on upload. Local stores the returned <code>{email, token}</code> mapping for emailing and reporting.
+      </div>
+      <div style="height: 10px;"></div>
+      <div class="actions">
+        <form action="{{ url_for('cloud_push', campaign_key=campaign['campaign_key']) }}" method="post">
+          <button type="submit">Push to Cloudflare (generate tokens)</button>
+        </form>
+        <a href="{{ url_for('cloud_tokens_csv', campaign_key=campaign['campaign_key']) }}">
+          <button class="secondary" type="button">Download cloud tokens CSV</button>
+        </a>
+      </div>
+      <div style="height: 10px;"></div>
+      <div class="muted">
+        {% if cloud_last_upload %}
+          Last push: <strong>{{ cloud_last_upload['created_at'] }}</strong> · Request hash: <code>{{ cloud_last_upload['request_hash'][:10] }}…</code>
+        {% else %}
+          No pushes recorded yet for this campaign.
+        {% endif %}
+      </div>
+
+      <div style="height: 10px;"></div>
+      <div style="max-height: 320px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Token</th>
+              <th>Uploaded</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in cloud_tokens %}
+              <tr>
+                <td><code>{{ r['email'] }}</code></td>
+                <td><code style="font-size:12px;">{{ r['cloud_token'][:8] }}…</code></td>
+                <td>{{ r['uploaded_at'] }}</td>
+                <td><a href="{{ cloud_base_url }}/s/{{ r['cloud_token'] }}"><code>/s/{{ r['cloud_token'][:8] }}…</code></a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% if cloud_tokens|length == 0 %}
+          <div class="muted" style="padding: 10px 12px;">No cloud tokens stored yet.</div>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
     <h3 style="margin-top:0;">Invites ledger (all recipients)</h3>
     <div class="muted">Scrollable view of each invite with statuses: invited/opened/assigned/submitted.</div>
     <div style="height: 10px;"></div>

@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -41,10 +43,14 @@ from .db import (
     mark_invitation_opened,
     populate_invitations_from_variants,
     report_rows,
+    record_cloud_upload,
     save_invitation_snapshot,
     single_select_choice_counts,
+    get_last_cloud_upload,
     insert_assignment,
+    list_cloud_invitation_tokens,
     submission_cohort_counts,
+    upsert_cloud_invitation_tokens,
     upsert_campaign,
     upsert_cases,
     upsert_recipients,
@@ -82,6 +88,37 @@ def _recipient_name_map(conn, *, emails: list[str]) -> dict[str, dict[str, str]]
             "lastname": str(strata.get("lastname") or ""),
         }
     return out
+
+
+def _canonical_json_bytes(obj: Any) -> bytes:
+    # Deterministic JSON encoding for hashing requests
+    return json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
+
+def _cloud_post_json(*, url: str, bearer_token: str, payload_obj: Any, timeout_sec: int = 30) -> dict[str, Any]:
+    data = _canonical_json_bytes(payload_obj)
+    req = urllib.request.Request(
+        url=url,
+        data=data,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {bearer_token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout_sec) as resp:
+            body = resp.read().decode("utf-8", errors="replace")
+            try:
+                return json.loads(body)
+            except Exception as e:
+                raise RuntimeError(f"Cloud response is not JSON (status {resp.status}): {body[:300]}") from e
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace") if hasattr(e, "read") else ""
+        raise RuntimeError(f"Cloud HTTP {e.code}: {body[:600]}") from e
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"Cloud connection error: {e}") from e
 
 
 def create_app() -> Flask:
@@ -699,6 +736,7 @@ def create_app() -> Flask:
 
     @app.get("/campaigns/<campaign_key>/master")
     def master_view(campaign_key: str) -> str:
+        cloud_base_url = (os.environ.get("CLOUDFLARE_STUDY_BASE_URL") or "").strip().rstrip("/")
         with db.connect() as conn:
             campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
             if campaign is None:
@@ -725,6 +763,12 @@ def create_app() -> Flask:
             recent_submissions = list_recent_submissions(conn, campaign_id=campaign_id, limit=20)
             ledger_rows = list_invitation_ledger_rows(conn, campaign_id=campaign_id)
 
+            cloud_last_upload = None
+            cloud_tokens = []
+            if cloud_base_url:
+                cloud_last_upload = get_last_cloud_upload(conn, campaign_id=campaign_id, cloud_base_url=cloud_base_url)
+                cloud_tokens = list_cloud_invitation_tokens(conn, campaign_id=campaign_id, cloud_base_url=cloud_base_url)
+
         return render_template(
             "master.html",
             campaign=campaign,
@@ -736,6 +780,122 @@ def create_app() -> Flask:
             cohort_counts=cohort_counts,
             recent_submissions=recent_submissions,
             ledger_rows=ledger_rows,
+            cloud_base_url=cloud_base_url,
+            cloud_last_upload=cloud_last_upload,
+            cloud_tokens=cloud_tokens,
+        )
+
+    @app.post("/campaigns/<campaign_key>/cloud/push")
+    def cloud_push(campaign_key: str) -> Response:
+        cloud_base_url = (os.environ.get("CLOUDFLARE_STUDY_BASE_URL") or "").strip().rstrip("/")
+        cloud_admin_token = (os.environ.get("CLOUDFLARE_ADMIN_TOKEN") or "").strip()
+        if not cloud_base_url or not cloud_admin_token:
+            flash("Missing env vars: CLOUDFLARE_STUDY_BASE_URL and CLOUDFLARE_ADMIN_TOKEN are required.", "error")
+            return redirect(url_for("master_view", campaign_key=campaign_key))
+
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            if campaign["picker_strategy"] == "online_assign":
+                flash("Cloud push currently supports offline campaigns (pick_k_cases/template_expand) only.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+
+            # Build the same payload as /export.json but in-memory (no download needed).
+            rows = conn.execute(
+                """
+                SELECT email, questionnaire_json, metadata_json
+                FROM invitation_variants
+                WHERE campaign_id = ?
+                ORDER BY email
+                """,
+                (int(campaign["id"]),),
+            ).fetchall()
+            if not rows:
+                flash("No generated variants yet. Click Generate variants first.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+
+            invitations: list[dict[str, Any]] = []
+            for r in rows:
+                invitations.append(
+                    {
+                        "email": r["email"],
+                        "questionnaireVersion": int(campaign["questionnaire_version"]),
+                        "questionnaireJson": json.loads(r["questionnaire_json"]),
+                        "metadata": json.loads(r["metadata_json"]),
+                    }
+                )
+            payload = {"campaignKey": campaign_key, "invitations": invitations}
+            request_hash = hashlib.sha256(_canonical_json_bytes(payload)).hexdigest()
+
+        # Do network call outside DB transaction.
+        try:
+            resp_obj = _cloud_post_json(
+                url=f"{cloud_base_url}/api/admin/upload",
+                bearer_token=cloud_admin_token,
+                payload_obj=payload,
+            )
+        except Exception as e:
+            flash(f"Cloud push failed: {e}", "error")
+            return redirect(url_for("master_view", campaign_key=campaign_key))
+
+        # Persist response.
+        tokens = resp_obj.get("invitations")
+        if not isinstance(tokens, list):
+            flash(f"Cloud push returned unexpected response: {str(resp_obj)[:300]}", "error")
+            return redirect(url_for("master_view", campaign_key=campaign_key))
+
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            assert campaign is not None
+            campaign_id = int(campaign["id"])
+            response_json = json.dumps(resp_obj, ensure_ascii=False, indent=2)
+            record_cloud_upload(
+                conn,
+                campaign_id=campaign_id,
+                cloud_base_url=cloud_base_url,
+                request_hash=request_hash,
+                response_json=response_json,
+            )
+            n = upsert_cloud_invitation_tokens(
+                conn, campaign_id=campaign_id, cloud_base_url=cloud_base_url, tokens=tokens
+            )
+            conn.commit()
+
+        flash(f"Pushed to Cloudflare: stored {n} cloud tokens.", "success")
+        return redirect(url_for("master_view", campaign_key=campaign_key))
+
+    @app.get("/campaigns/<campaign_key>/cloud/tokens.csv")
+    def cloud_tokens_csv(campaign_key: str) -> Response:
+        cloud_base_url = (os.environ.get("CLOUDFLARE_STUDY_BASE_URL") or "").strip().rstrip("/")
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                return Response("Campaign not found", status=404)
+            if not cloud_base_url:
+                return Response("CLOUDFLARE_STUDY_BASE_URL not set", status=400)
+            rows = list_cloud_invitation_tokens(conn, campaign_id=int(campaign["id"]), cloud_base_url=cloud_base_url)
+
+        # Minimal CSV (no external deps)
+        lines = ["email,token,link"]
+        for r in rows:
+            token = str(r["cloud_token"])
+            link = f"{cloud_base_url}/s/{token}"
+            email = str(r["email"])
+            # naive CSV escaping for commas/quotes
+            def esc(s: str) -> str:
+                if any(ch in s for ch in [",", "\"", "\n", "\r"]):
+                    return "\"" + s.replace("\"", "\"\"") + "\""
+                return s
+
+            lines.append(",".join([esc(email), esc(token), esc(link)]))
+        body = "\n".join(lines) + "\n"
+        return Response(
+            body,
+            status=200,
+            mimetype="text/csv",
+            headers={"Content-Disposition": f'attachment; filename=\"{campaign_key}.cloud_tokens.csv\"'},
         )
 
     @app.post("/campaigns/<campaign_key>/email-settings")
