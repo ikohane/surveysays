@@ -25,6 +25,15 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
     if (denied) return denied;
     if (context.request.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
+    const envAny: any = context.env as any;
+    const envKeys = Object.keys(envAny || {}).sort();
+    if (!envAny || !envAny.DB) {
+      return jsonResponse(
+        { error: "Missing D1 binding 'DB' in Pages Functions environment", envKeys },
+        { status: 500 }
+      );
+    }
+
     let body: any;
     try {
       body = await readJson(context.request);

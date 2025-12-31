@@ -8,10 +8,25 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
   if (context.request.method !== "GET") return new Response("Method not allowed", { status: 405 });
 
   try {
-    const r = await context.env.DB.prepare("SELECT 1 as ok").first();
-    return jsonResponse({ ok: true, db: r || null }, { status: 200 });
+    const envAny: any = context.env as any;
+    const envKeys = Object.keys(envAny || {}).sort();
+    if (!envAny || !envAny.DB) {
+      return jsonResponse(
+        {
+          ok: false,
+          error: "Missing D1 binding 'DB' in Pages Functions environment",
+          envKeys,
+        },
+        { status: 500 }
+      );
+    }
+
+    const r = await envAny.DB.prepare("SELECT 1 as ok").first();
+    return jsonResponse({ ok: true, db: r || null, envKeys }, { status: 200 });
   } catch (e: any) {
-    return jsonResponse({ ok: false, error: String(e?.message || e) }, { status: 500 });
+    const envAny: any = context.env as any;
+    const envKeys = Object.keys(envAny || {}).sort();
+    return jsonResponse({ ok: false, error: String(e?.message || e), envKeys }, { status: 500 });
   }
 }
 
