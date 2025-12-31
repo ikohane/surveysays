@@ -840,6 +840,35 @@ def list_recent_submissions(conn: sqlite3.Connection, *, campaign_id: int, limit
     )
 
 
+def list_invitation_ledger_rows(conn: sqlite3.Connection, *, campaign_id: int) -> list[sqlite3.Row]:
+    """
+    One row per invitation with status columns:
+    - invited: row exists
+    - opened: opened_at is non-null
+    - assigned: questionnaire_hash is non-null (snapshot present)
+    - submitted: matching submissions row exists
+    """
+    return list(
+        conn.execute(
+            """
+            SELECT
+              i.email,
+              i.token,
+              i.created_at AS invited_at,
+              i.opened_at,
+              i.questionnaire_hash,
+              s.submitted_at
+            FROM invitations i
+            LEFT JOIN submissions s
+              ON s.campaign_id = i.campaign_id AND s.token = i.token
+            WHERE i.campaign_id = ?
+            ORDER BY i.email
+            """,
+            (campaign_id,),
+        ).fetchall()
+    )
+
+
 def report_rows(
     conn: sqlite3.Connection,
     *,

@@ -106,6 +106,40 @@
   </div>
 
   <div class="card">
+    <h3 style="margin-top:0;">Invites ledger (all recipients)</h3>
+    <div class="muted">Scrollable view of each invite with statuses: invited/opened/assigned/submitted.</div>
+    <div style="height: 10px;"></div>
+    <div style="max-height: 420px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Invite</th>
+            <th>Opened</th>
+            <th>Assigned</th>
+            <th>Submitted</th>
+            <th>Token</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in ledger_rows %}
+            <tr>
+              <td><code>{{ r['email'] }}</code></td>
+              <td>{% if r['invited_at'] %}yes{% else %}{% endif %}</td>
+              <td>{% if r['opened_at'] %}yes{% else %}{% endif %}</td>
+              <td>{% if r['questionnaire_hash'] %}yes{% else %}{% endif %}</td>
+              <td>{% if r['submitted_at'] %}yes{% else %}{% endif %}</td>
+              <td><code style="font-size:12px;">{{ r['token'][:8] }}…</code></td>
+              <td><a href="{{ url_for('respondent_open', token=r['token']) }}"><code>/s/{{ r['token'][:8] }}…</code></a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
     <h3 style="margin-top:0;">Actions</h3>
     <div class="muted">These buttons reuse the same endpoints we’ll later map to Cloudflare/Resend deployment.</div>
     <div style="height: 12px;"></div>

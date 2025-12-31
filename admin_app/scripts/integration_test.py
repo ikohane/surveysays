@@ -100,6 +100,7 @@ def main() -> None:
     r = client.get(f"/campaigns/{campaign_pickk}/master")
     assert r.status_code == 200
     assert b"Master view" in r.data
+    assert b"Invites ledger" in r.data
     assert b"Generate variants" in r.data or b"Generate" in r.data
 
     # Offline campaigns should also have tokenized invitations with snapshots after Generate
@@ -191,6 +192,7 @@ def main() -> None:
     r = client.get(f"/campaigns/{campaign_online}/master")
     assert r.status_code == 200
     assert b"Master view" in r.data
+    assert b"Invites ledger" in r.data
     assert b"Prepare online_assign" in r.data
     assert b"Email (Resend) settings" in r.data
     assert b"Send invitation emails" in r.data

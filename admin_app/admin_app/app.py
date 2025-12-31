@@ -31,6 +31,7 @@ from .db import (
     list_campaigns,
     list_assignments_for_token,
     list_invitations_for_campaign,
+    list_invitation_ledger_rows,
     list_recent_submissions,
     list_question_items_with_stats,
     load_cases,
@@ -673,6 +674,7 @@ def create_app() -> Flask:
             ).fetchone()
             cohort_counts = submission_cohort_counts(conn, campaign_id=campaign_id)
             recent_submissions = list_recent_submissions(conn, campaign_id=campaign_id, limit=20)
+            ledger_rows = list_invitation_ledger_rows(conn, campaign_id=campaign_id)
 
         return render_template(
             "master.html",
@@ -684,6 +686,7 @@ def create_app() -> Flask:
             inv_counts=inv_counts,
             cohort_counts=cohort_counts,
             recent_submissions=recent_submissions,
+            ledger_rows=ledger_rows,
         )
 
     @app.post("/campaigns/<campaign_key>/email-settings")
