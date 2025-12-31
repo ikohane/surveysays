@@ -279,9 +279,9 @@ def _ensure_cloud_tables(conn: sqlite3.Connection) -> None:
               FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
               FOREIGN KEY (push_id) REFERENCES cloud_pushes(id) ON DELETE CASCADE
             );
-            CREATE INDEX idx_cloud_invitation_tokens_campaign_id ON cloud_invitation_tokens(campaign_id);
-            CREATE INDEX idx_cloud_invitation_tokens_email ON cloud_invitation_tokens(email);
-            CREATE INDEX idx_cloud_invitation_tokens_push_id ON cloud_invitation_tokens(push_id);
+            CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_campaign_id ON cloud_invitation_tokens(campaign_id);
+            CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_email ON cloud_invitation_tokens(email);
+            CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_push_id ON cloud_invitation_tokens(push_id);
             """
         )
         return
@@ -291,6 +291,10 @@ def _ensure_cloud_tables(conn: sqlite3.Connection) -> None:
         return
 
     # Legacy schema exists (unique per email); migrate to append-only.
+    # Drop legacy indexes first: SQLite index names are global, and table rename keeps index names.
+    conn.execute("DROP INDEX IF EXISTS idx_cloud_invitation_tokens_campaign_id")
+    conn.execute("DROP INDEX IF EXISTS idx_cloud_invitation_tokens_email")
+    conn.execute("DROP INDEX IF EXISTS idx_cloud_invitation_tokens_push_id")
     conn.execute("ALTER TABLE cloud_invitation_tokens RENAME TO cloud_invitation_tokens_legacy")
     conn.executescript(
         f"""
@@ -306,9 +310,9 @@ def _ensure_cloud_tables(conn: sqlite3.Connection) -> None:
           FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
           FOREIGN KEY (push_id) REFERENCES cloud_pushes(id) ON DELETE CASCADE
         );
-        CREATE INDEX idx_cloud_invitation_tokens_campaign_id ON cloud_invitation_tokens(campaign_id);
-        CREATE INDEX idx_cloud_invitation_tokens_email ON cloud_invitation_tokens(email);
-        CREATE INDEX idx_cloud_invitation_tokens_push_id ON cloud_invitation_tokens(push_id);
+        CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_campaign_id ON cloud_invitation_tokens(campaign_id);
+        CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_email ON cloud_invitation_tokens(email);
+        CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_push_id ON cloud_invitation_tokens(push_id);
         """
     )
 
