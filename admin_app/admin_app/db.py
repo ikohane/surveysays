@@ -166,54 +166,6 @@ CREATE TABLE IF NOT EXISTS invitation_variants (
 CREATE INDEX IF NOT EXISTS idx_invitation_variants_campaign_id ON invitation_variants(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_invitation_variants_email ON invitation_variants(email);
 CREATE INDEX IF NOT EXISTS idx_invitation_variants_hash ON invitation_variants(questionnaire_hash);
-
--- -------------------------
--- Cloud uploads (Cloudflare staging/prod token mappings)
--- -------------------------
-
-CREATE TABLE IF NOT EXISTS cloud_pushes (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  campaign_id INTEGER NOT NULL,
-  cloud_base_url TEXT NOT NULL,
-  request_hash TEXT NOT NULL,
-  response_json TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
-  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_cloud_pushes_campaign_id ON cloud_pushes(campaign_id);
-CREATE INDEX IF NOT EXISTS idx_cloud_pushes_created_at ON cloud_pushes(created_at);
-
--- Legacy table retained for backward compatibility / migration.
-CREATE TABLE IF NOT EXISTS cloud_uploads (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  campaign_id INTEGER NOT NULL,
-  cloud_base_url TEXT NOT NULL,
-  request_hash TEXT NOT NULL,
-  response_json TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
-  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_cloud_uploads_campaign_id ON cloud_uploads(campaign_id);
-CREATE INDEX IF NOT EXISTS idx_cloud_uploads_created_at ON cloud_uploads(created_at);
-
-CREATE TABLE IF NOT EXISTS cloud_invitation_tokens (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  push_id INTEGER NOT NULL,
-  campaign_id INTEGER NOT NULL,
-  cloud_base_url TEXT NOT NULL,
-  email TEXT NOT NULL,
-  cloud_token TEXT NOT NULL,
-  uploaded_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
-  UNIQUE (push_id, email),
-  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
-  FOREIGN KEY (push_id) REFERENCES cloud_pushes(id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_campaign_id ON cloud_invitation_tokens(campaign_id);
-CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_email ON cloud_invitation_tokens(email);
-CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_push_id ON cloud_invitation_tokens(push_id);
 """
 
 
