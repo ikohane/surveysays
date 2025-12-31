@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <div class="actions" style="justify-content: space-between;">
+      <div>
+        <h2 style="margin: 0;">Email preview (dry-run)</h2>
+        <div class="muted">Campaign: {{ campaign['campaign_key'] }} · Safety: forced delivery to <code>kohane@gmail.com</code></div>
+      </div>
+      <div class="actions">
+        <a href="{{ url_for('master_view', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Back</button></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Header</h3>
+    <div><span class="muted">From:</span> <code>{{ email_from }}</code></div>
+    <div style="height: 6px;"></div>
+    <div><span class="muted">Subject:</span> <code>{{ email_subject }}</code></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Per-invite render</h3>
+    <div class="muted">Shows intended recipient, token link, and rendered HTML body (variables substituted).</div>
+    <div style="height: 10px;"></div>
+    <div style="max-height: 520px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Intended email</th>
+            <th>Forced to</th>
+            <th>Survey link</th>
+            <th>Rendered body</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in previews %}
+            <tr>
+              <td><code>{{ p['intended_email'] }}</code></td>
+              <td><code>{{ p['forced_to'] }}</code></td>
+              <td><code style="font-size:12px;">{{ p['survey_link'] }}</code></td>
+              <td>
+                <div style="max-width: 520px;">
+                  <pre style="white-space: pre-wrap;">{{ p['rendered_html'] }}</pre>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
+
+

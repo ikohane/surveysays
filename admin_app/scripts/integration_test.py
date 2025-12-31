@@ -102,6 +102,8 @@ def main() -> None:
     assert b"Master view" in r.data
     assert b"Invites ledger" in r.data
     assert b"Generate variants" in r.data or b"Generate" in r.data
+    assert b"Dry-run preview" in r.data
+    assert b"Results" in r.data
 
     # Offline campaigns should also have tokenized invitations with snapshots after Generate
     conn = sqlite3.connect(str(db_path))
@@ -196,6 +198,8 @@ def main() -> None:
     assert b"Prepare online_assign" in r.data
     assert b"Email (Resend) settings" in r.data
     assert b"Send invitation emails" in r.data
+    assert b"Dry-run preview" in r.data
+    assert b"Results" in r.data
 
     resp = client.get(f"/campaigns/{campaign_online}/export_invitations.json")
     assert resp.status_code == 200
@@ -277,6 +281,11 @@ def main() -> None:
     r = client.get(f"/campaigns/{campaign_online}/reports")
     assert r.status_code == 200
     assert b"Submitted" in r.data
+
+    # Results page renders
+    r = client.get(f"/campaigns/{campaign_online}/results")
+    assert r.status_code == 200
+    assert b"Single-select counts" in r.data
 
     # 6) freeText block (contract + rendering)
     q_free = {

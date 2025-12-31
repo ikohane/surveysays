@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <div class="actions" style="justify-content: space-between;">
+      <div>
+        <h2 style="margin: 0;">Results</h2>
+        <div class="muted">Campaign: {{ campaign['campaign_key'] }} · Submitted: {{ counts.submitted }} / {{ counts.invited }}</div>
+      </div>
+      <div class="actions">
+        <a href="{{ url_for('master_view', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Back</button></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Single-select counts</h3>
+    <div class="muted">Aggregated from normalized `submission_answers`.</div>
+    <div style="height: 10px;"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>block_id</th>
+          <th>choice_id</th>
+          <th>count</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in single_select_counts %}
+          <tr>
+            <td><code>{{ r['block_id'] }}</code></td>
+            <td><code>{{ r['choice_id'] }}</code></td>
+            <td style="font-weight:700;">{{ r['n'] }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if single_select_counts|length == 0 %}
+      <div class="muted">No singleSelect answers yet.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Free-text answers (latest 500)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>created_at</th>
+          <th>token</th>
+          <th>block_id</th>
+          <th>answer</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in free_text_answers %}
+          <tr>
+            <td>{{ r['created_at'] }}</td>
+            <td><code style="font-size:12px;">{{ r['token'][:8] }}…</code></td>
+            <td><code>{{ r['block_id'] }}</code></td>
+            <td style="white-space: pre-wrap;">{{ r['value_text'] }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if free_text_answers|length == 0 %}
+      <div class="muted">No freeText answers yet.</div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+

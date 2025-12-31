@@ -72,6 +72,11 @@ In `online_assign` mode, respondents submit exactly once per token.
 
 The local simulated respondent page (`/s/<token>`) renders an HTML form and posts to the submit endpoint.
 
+## Results (local)
+
+- Master view includes campaign-level counts and tables.
+- Results page: `/campaigns/<campaign_key>/results` shows aggregated `singleSelect` counts and recent `freeText` answers.
+
 ## Next steps (Cloudflare + Resend)
 
 From the project plan (`.cursor/plans/qgen-local-admin.plan.md`), the next parallel steps to take once local authoring is stable:

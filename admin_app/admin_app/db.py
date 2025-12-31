@@ -928,3 +928,47 @@ def report_rows(
     )
 
 
+def single_select_choice_counts(conn: sqlite3.Connection, *, campaign_id: int) -> list[sqlite3.Row]:
+    """
+    Aggregate singleSelect answers by (block_id, choice_id).
+    """
+    return list(
+        conn.execute(
+            """
+            SELECT
+              block_id,
+              value_choice_id AS choice_id,
+              COUNT(*) AS n
+            FROM submission_answers
+            WHERE campaign_id = ?
+              AND block_type = 'singleSelect'
+              AND value_choice_id IS NOT NULL
+            GROUP BY block_id, value_choice_id
+            ORDER BY block_id, n DESC, choice_id
+            """,
+            (campaign_id,),
+        ).fetchall()
+    )
+
+
+def list_free_text_answers(conn: sqlite3.Connection, *, campaign_id: int, limit: int = 500) -> list[sqlite3.Row]:
+    return list(
+        conn.execute(
+            """
+            SELECT
+              created_at,
+              token,
+              block_id,
+              value_text
+            FROM submission_answers
+            WHERE campaign_id = ?
+              AND block_type = 'freeText'
+              AND value_text IS NOT NULL
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (campaign_id, limit),
+        ).fetchall()
+    )
+
+

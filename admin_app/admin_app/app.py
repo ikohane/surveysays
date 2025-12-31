@@ -34,6 +34,7 @@ from .db import (
     list_invitation_ledger_rows,
     list_recent_submissions,
     list_question_items_with_stats,
+    list_free_text_answers,
     load_cases,
     load_recipients,
     load_templates,
@@ -41,6 +42,7 @@ from .db import (
     populate_invitations_from_variants,
     report_rows,
     save_invitation_snapshot,
+    single_select_choice_counts,
     insert_assignment,
     submission_cohort_counts,
     upsert_campaign,
@@ -52,6 +54,14 @@ from .db import (
 )
 
 from .resend_client import ResendError, create_or_update_campaign_template, send_invites_for_campaign
+
+def _render_email_preview(*, html: str, variables: dict[str, str]) -> str:
+    # Very small, safe placeholder replacement for triple-brace variables.
+    # We do not execute any HTML/JS; the template itself is HTML, we just substitute strings.
+    out = html
+    for k, v in variables.items():
+        out = out.replace(f"{{{{{{{k}}}}}}}", v)
+    return out
 
 
 def create_app() -> Flask:
@@ -612,6 +622,25 @@ def create_app() -> Flask:
             submitted=submitted,
         )
 
+    @app.get("/campaigns/<campaign_key>/results")
+    def results(campaign_key: str) -> str:
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            campaign_id = int(campaign["id"])
+            counts = submission_cohort_counts(conn, campaign_id=campaign_id)
+            ss_counts = single_select_choice_counts(conn, campaign_id=campaign_id)
+            ft = list_free_text_answers(conn, campaign_id=campaign_id, limit=500)
+        return render_template(
+            "results.html",
+            campaign=campaign,
+            counts=counts,
+            single_select_counts=ss_counts,
+            free_text_answers=ft,
+        )
+
     @app.get("/campaigns/<campaign_key>/invitations")
     def campaign_invitations(campaign_key: str) -> str:
         with db.connect() as conn:
@@ -782,6 +811,59 @@ def create_app() -> Flask:
 
         flash(f"Sent {len(sends)} emails (forced delivery to kohane@gmail.com).", "success")
         return redirect(url_for("master_view", campaign_key=campaign_key))
+
+    @app.get("/campaigns/<campaign_key>/email-preview")
+    def email_preview(campaign_key: str) -> str:
+        """
+        Dry-run preview of what would be sent (no Resend API calls).
+        Shows rendered subject/from and a per-invite rendered email body with SURVEY_LINK/CAMPAIGN_TITLE/RECIPIENT_EMAIL.
+        """
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            inv_rows = list_invitations_for_campaign(conn, campaign_id=int(campaign["id"]))
+            if not inv_rows:
+                flash("No invitations yet. Click Generate/Prepare first.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+
+            email_from = (campaign["email_from"] or "").strip()
+            email_subject = (campaign["email_subject"] or "").strip()
+            email_html = (campaign["email_html"] or "").strip()
+            base_url = (campaign["email_base_url"] or "http://127.0.0.1:5055").strip()
+
+            if not email_from or not email_subject or not email_html:
+                flash("Missing email settings: email_from, email_subject, and email_html are required.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+
+            previews: list[dict[str, str]] = []
+            for r in inv_rows:
+                intended_email = str(r["email"])
+                token = str(r["token"])
+                link = base_url.rstrip("/") + f"/s/{token}"
+                variables = {
+                    "SURVEY_LINK": link,
+                    "CAMPAIGN_TITLE": str(campaign["title"]),
+                    "RECIPIENT_EMAIL": intended_email,
+                }
+                previews.append(
+                    {
+                        "intended_email": intended_email,
+                        "forced_to": "kohane@gmail.com",
+                        "token": token,
+                        "survey_link": link,
+                        "rendered_html": _render_email_preview(html=email_html, variables=variables),
+                    }
+                )
+
+        return render_template(
+            "email_preview.html",
+            campaign=campaign,
+            email_from=email_from,
+            email_subject=email_subject,
+            previews=previews,
+        )
 
     @app.get("/campaigns/<campaign_key>/export_invitations.json")
     def export_invitations_json(campaign_key: str) -> Response:

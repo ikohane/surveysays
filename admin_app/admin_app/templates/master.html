@@ -8,6 +8,7 @@
       </div>
       <div class="actions">
         <a href="{{ url_for('campaign_detail', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Campaign</button></a>
+        <a href="{{ url_for('results', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Results</button></a>
         {% if campaign['picker_strategy'] == 'online_assign' %}
           <a href="{{ url_for('campaign_invitations', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Invitations</button></a>
           <a href="{{ url_for('online_stats', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Online stats</button></a>
@@ -140,52 +141,70 @@
   </div>
 
   <div class="card">
+    <h3 style="margin-top:0;">Recommended first-time flow</h3>
+    <ol style="margin: 0; padding-left: 18px;">
+      <li>Import cases/recipients (once)</li>
+      <li>{% if campaign['picker_strategy'] == 'online_assign' %}Prepare online_assign{% else %}Generate variants{% endif %}</li>
+      <li>Configure email settings</li>
+      <li>Dry-run preview</li>
+      <li>Send invitation emails (forced to kohane@gmail.com during MVP)</li>
+    </ol>
+  </div>
+
+  <div class="card">
     <h3 style="margin-top:0;">Actions</h3>
     <div class="muted">These buttons reuse the same endpoints we’ll later map to Cloudflare/Resend deployment.</div>
     <div style="height: 12px;"></div>
 
-    <div class="row">
-      <div class="card" style="margin:0;">
-        <h4 style="margin-top:0;">Imports</h4>
-        <form action="{{ url_for('import_cases') }}" method="post" enctype="multipart/form-data">
-          <label>cases.csv</label>
-          <input type="file" name="file" accept=".csv,text/csv" />
-          <div style="height: 8px;"></div>
-          <button class="secondary" type="submit">Import cases</button>
-        </form>
-        <div style="height: 10px;"></div>
-        <form action="{{ url_for('import_recipients') }}" method="post" enctype="multipart/form-data">
-          <label>recipients.csv</label>
-          <input type="file" name="file" accept=".csv,text/csv" />
-          <div style="height: 8px;"></div>
-          <button class="secondary" type="submit">Import recipients</button>
-        </form>
-        <div style="height: 10px;"></div>
-        <form action="{{ url_for('import_templates') }}" method="post" enctype="multipart/form-data">
-          <label>templates.csv</label>
-          <input type="file" name="file" accept=".csv,text/csv" />
-          <div style="height: 8px;"></div>
-          <button class="secondary" type="submit">Import templates</button>
-        </form>
+    <details>
+      <summary style="cursor: pointer; font-weight: 700;">Advanced / Re-run (imports + generate)</summary>
+      <div class="muted" style="margin-top: 8px;">
+        Warning: Imports update global inputs (cases/recipients/templates). If you change inputs, re-run Generate/Prepare for this campaign.
       </div>
+      <div style="height: 12px;"></div>
+      <div class="row">
+        <div class="card" style="margin:0;">
+          <h4 style="margin-top:0;">Imports</h4>
+          <form action="{{ url_for('import_cases') }}" method="post" enctype="multipart/form-data">
+            <label>cases.csv</label>
+            <input type="file" name="file" accept=".csv,text/csv" />
+            <div style="height: 8px;"></div>
+            <button class="secondary" type="submit">Import cases</button>
+          </form>
+          <div style="height: 10px;"></div>
+          <form action="{{ url_for('import_recipients') }}" method="post" enctype="multipart/form-data">
+            <label>recipients.csv</label>
+            <input type="file" name="file" accept=".csv,text/csv" />
+            <div style="height: 8px;"></div>
+            <button class="secondary" type="submit">Import recipients</button>
+          </form>
+          <div style="height: 10px;"></div>
+          <form action="{{ url_for('import_templates') }}" method="post" enctype="multipart/form-data">
+            <label>templates.csv</label>
+            <input type="file" name="file" accept=".csv,text/csv" />
+            <div style="height: 8px;"></div>
+            <button class="secondary" type="submit">Import templates</button>
+          </form>
+        </div>
 
-      <div class="card" style="margin:0;">
-        <h4 style="margin-top:0;">Generate / Prepare</h4>
-        <form action="{{ url_for('generate_variants', campaign_key=campaign['campaign_key']) }}" method="post">
-          <button type="submit">{% if campaign['picker_strategy'] == 'online_assign' %}Prepare online_assign{% else %}Generate variants{% endif %}</button>
-        </form>
-        <div style="height: 10px;"></div>
-        {% if campaign['picker_strategy'] == 'online_assign' %}
-          <a href="{{ url_for('export_invitations_json', campaign_key=campaign['campaign_key']) }}">
-            <button class="secondary" type="button">Download invitations tokens JSON</button>
-          </a>
-        {% else %}
-          <a href="{{ url_for('export_bulk_json', campaign_key=campaign['campaign_key']) }}">
-            <button class="secondary" type="button">Download bulk variants JSON</button>
-          </a>
-        {% endif %}
+        <div class="card" style="margin:0;">
+          <h4 style="margin-top:0;">Generate / Prepare</h4>
+          <form action="{{ url_for('generate_variants', campaign_key=campaign['campaign_key']) }}" method="post">
+            <button type="submit">{% if campaign['picker_strategy'] == 'online_assign' %}Prepare online_assign{% else %}Generate variants{% endif %}</button>
+          </form>
+          <div style="height: 10px;"></div>
+          {% if campaign['picker_strategy'] == 'online_assign' %}
+            <a href="{{ url_for('export_invitations_json', campaign_key=campaign['campaign_key']) }}">
+              <button class="secondary" type="button">Download invitations tokens JSON</button>
+            </a>
+          {% else %}
+            <a href="{{ url_for('export_bulk_json', campaign_key=campaign['campaign_key']) }}">
+              <button class="secondary" type="button">Download bulk variants JSON</button>
+            </a>
+          {% endif %}
+        </div>
       </div>
-    </div>
+    </details>
   </div>
 
   <div class="card">
@@ -231,6 +250,10 @@
     <form action="{{ url_for('send_emails', campaign_key=campaign['campaign_key']) }}" method="post">
       <button type="submit">Send invitation emails (forced to kohane@gmail.com)</button>
     </form>
+    <div style="height: 10px;"></div>
+    <a href="{{ url_for('email_preview', campaign_key=campaign['campaign_key']) }}">
+      <button class="secondary" type="button">Dry-run preview (no send)</button>
+    </a>
   </div>
 {% endblock %}
 
