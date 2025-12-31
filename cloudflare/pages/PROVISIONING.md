@@ -91,6 +91,20 @@ Expected: `{"ok": true, ...}` and `envKeys` includes `DB`.
   - Target: `surveysays.pages.dev`
   - Proxy: **Proxied** (orange cloud)
 
+### Optional (temporary) hardening: WAF IP allow-list for admin endpoints
+If Cloudflare Access/Zero Trust is not available yet, you can temporarily protect admin endpoints with a WAF custom rule on the `hvp.global` zone:
+
+- Match: host `study-staging.hvp.global` and path starts with `/api/admin/`
+- Block unless request comes from your public IP.
+
+Example expression (IPv4-only):
+
+```text
+(http.host eq "study-staging.hvp.global" and starts_with(http.request.uri.path, "/api/admin/") and ip.src ne 24.61.120.91)
+```
+
+Important: if your machine uses IPv6, your effective public IP can change frequently. Either allow-list both IPv4 and IPv6, or disable IPv6 on your machine when doing admin actions.
+
 ### 6) Upload invitations payload (generates tokens)
 From your laptop (where you have the JSON file):
 

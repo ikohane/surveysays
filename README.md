@@ -23,6 +23,14 @@ This repo currently contains:
 - `sample_data/templates.csv`
 - `sample_data/param_vector.json`
 
+## `cases.csv` in the Admin app (what it does)
+
+`cases.csv` is the **authoring-time question bank** input for case-based studies.
+
+- **Import**: In the local Admin UI, uploading `cases.csv` (endpoint `POST /imports/cases`) parses it with `qgen.io_csv.parse_cases_csv` and upserts it into the local SQLite `cases` table.
+- **Offline generation** (`pick_k_cases`): clicking **Generate** uses the imported cases to pick **K** cases per recipient and build per-recipient questionnaire JSON variants.
+- **Online assignment** (`online_assign`): clicking **Prepare** turns the imported cases into a `question_items` bank; then when a respondent opens `/s/<token>`, the system assigns **K** items and snapshots the resulting questionnaire JSON onto the invitation.
+
 ## Run the local Admin web app
 
 From the repo root:
@@ -105,23 +113,28 @@ Set these env vars in the same shell where you run the local Admin server:
 - `CLOUDFLARE_STUDY_BASE_URL` (example: `https://study-staging.hvp.global`)
 - `CLOUDFLARE_ADMIN_TOKEN` (the Pages `ADMIN_TOKEN` secret)
 
-Then open the campaign **Master view** and use **“Push to Cloudflare (generate tokens)”**. The local app will:\n+- Build the bulk invitations payload in-memory\n+- POST to `{{CLOUDFLARE_STUDY_BASE_URL}}/api/admin/upload`\n+- Store the returned `{email, token}` mapping locally and show it as a ledger\n+- Provide a **Download cloud tokens CSV** button for emailing
 Then open the campaign **Master view** and use **“Push to Cloudflare (generate tokens)”**. The local app will:
 
 - Build the bulk invitations payload in-memory
 - POST to `${CLOUDFLARE_STUDY_BASE_URL}/api/admin/upload`
-- Store the returned `{email, token}` mapping locally and show it as a ledger
-- Provide a **Download cloud tokens CSV** button for emailing
+- Store the returned `{email, token}` mapping locally
+- Show the tokens in the campaign Master view, and provide CSV exports
 
-Note: your staging currently has an additional Cloudflare WAF rule (IP allow-list) for `/api/admin/*`, so pushing will only work from an allowed IP.
+Note: your staging may have an additional Cloudflare WAF rule (IP allow-list) for `/api/admin/*`, so pushing will only work from an allowed IP. If you are blocked unexpectedly, check whether your machine is using IPv6 (it can change frequently).
 
 #### Multi-push (“waves”) semantics
 If you push the same `campaignKey` to Cloudflare multiple times, Cloudflare will generate a new token set each time. The local Admin app retains full push history and shows:
 - **Latest tokens (one per email)** for emailing
 - **History (by push/wave)** for debugging and audits
+- CSV exports:
+  - Latest: **Download latest cloud tokens CSV**
+  - Full history: **Download tokens history CSV**
 
 #### TLS / certificate errors (macOS/Homebrew Python)
 If you see `CERTIFICATE_VERIFY_FAILED` when pushing to Cloudflare, upgrade/install `certifi` and re-run. The Admin app prefers `certifi`’s CA bundle for outbound HTTPS.
+
+#### Local DB migration note (push history)
+If you pulled a version that introduced “push history” and your local Admin server fails to start with a SQLite schema error, `git pull` again and restart. If you’re still stuck, you can move aside your local DB at `out/local_admin.sqlite3` (you’ll lose local state).
 
 ## Run qGen directly (CLI)
 
