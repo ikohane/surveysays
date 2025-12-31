@@ -134,7 +134,7 @@ def main() -> None:
     assert r.status_code == 409
 
     payload1 = export_payload(campaign_pickk)
-    assert len(payload1["invitations"]) == 5
+    assert len(payload1["invitations"]) == 10
     inv0 = payload1["invitations"][0]
     qj = inv0["questionnaireJson"]
     assert len(qj["blocks"]) == 4, "K=2 should yield 2*(vignette+question)=4 blocks"
@@ -174,7 +174,7 @@ def main() -> None:
 
     generate(campaign_tmpl)
     payload_t1 = export_payload(campaign_tmpl)
-    assert len(payload_t1["invitations"]) == 5
+    assert len(payload_t1["invitations"]) == 10
     qj = payload_t1["invitations"][0]["questionnaireJson"]
     assert len(qj["blocks"]) == 4
     # spot-check rendered text contains no braces (placeholders should be filled)
@@ -205,7 +205,7 @@ def main() -> None:
     assert resp.status_code == 200
     inv_payload = json.loads(resp.data.decode("utf-8"))
     assert inv_payload["campaignKey"] == campaign_online
-    assert len(inv_payload["invitations"]) == 5
+    assert len(inv_payload["invitations"]) == 10
     token0 = inv_payload["invitations"][0]["token"]
     assert token0
 

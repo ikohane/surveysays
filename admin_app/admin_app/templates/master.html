@@ -240,7 +240,14 @@
       </div>
       <div style="height: 10px;"></div>
       <label>email_html (Resend template body)</label>
-      <div class="muted">Allowed variables: <code>{% raw %}{{{SURVEY_LINK}}}{% endraw %}</code>, <code>{% raw %}{{{CAMPAIGN_TITLE}}}{% endraw %}</code>, <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code></div>
+      <div class="muted">
+        Allowed variables:
+        <code>{% raw %}{{{SURVEY_LINK}}}{% endraw %}</code>,
+        <code>{% raw %}{{{CAMPAIGN_TITLE}}}{% endraw %}</code>,
+        <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code>,
+        <code>{% raw %}{{{FIRST_NAME}}}{% endraw %}</code>,
+        <code>{% raw %}{{{LAST_NAME}}}{% endraw %}</code>
+      </div>
       <div style="height: 8px;"></div>
       <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ campaign['email_html'] or '' }}</textarea>
       <div style="height: 10px;"></div>

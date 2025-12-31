@@ -64,6 +64,26 @@ def _render_email_preview(*, html: str, variables: dict[str, str]) -> str:
     return out
 
 
+def _recipient_name_map(conn, *, emails: list[str]) -> dict[str, dict[str, str]]:
+    """
+    Returns mapping email -> {firstname, lastname} from recipients.strata_json.
+    """
+    if not emails:
+        return {}
+    rows = conn.execute("SELECT email, strata_json FROM recipients WHERE email IN (%s)" % (",".join(["?"] * len(emails))), emails).fetchall()
+    out: dict[str, dict[str, str]] = {}
+    for r in rows:
+        try:
+            strata = json.loads(r["strata_json"]) if r["strata_json"] else {}
+        except Exception:
+            strata = {}
+        out[str(r["email"])] = {
+            "firstname": str(strata.get("firstname") or ""),
+            "lastname": str(strata.get("lastname") or ""),
+        }
+    return out
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.secret_key = os.environ.get("ADMIN_APP_SECRET", "dev-secret-change-me")
@@ -797,13 +817,23 @@ def create_app() -> Flask:
             )
             conn.commit()
 
+            name_map = _recipient_name_map(conn, emails=[str(r["email"]) for r in inv_rows])
+
         # Send outside transaction (still safe; recipients are forced to kohane@gmail.com)
         try:
             sends = send_invites_for_campaign(
                 template_id=template_id,
                 campaign_title=str(campaign["title"]),
                 base_url=base_url,
-                invitations=[{"email": r["email"], "token": r["token"]} for r in inv_rows],
+                invitations=[
+                    {
+                        "email": r["email"],
+                        "token": r["token"],
+                        "first_name": (name_map.get(str(r["email"])) or {}).get("firstname", ""),
+                        "last_name": (name_map.get(str(r["email"])) or {}).get("lastname", ""),
+                    }
+                    for r in inv_rows
+                ],
             )
         except ResendError as e:
             flash(f"Resend send error: {e}", "error")
@@ -837,15 +867,20 @@ def create_app() -> Flask:
                 flash("Missing email settings: email_from, email_subject, and email_html are required.", "error")
                 return redirect(url_for("master_view", campaign_key=campaign_key))
 
+            name_map = _recipient_name_map(conn, emails=[str(r["email"]) for r in inv_rows])
+
             previews: list[dict[str, str]] = []
             for r in inv_rows:
                 intended_email = str(r["email"])
                 token = str(r["token"])
                 link = base_url.rstrip("/") + f"/s/{token}"
+                nm = name_map.get(intended_email) or {}
                 variables = {
                     "SURVEY_LINK": link,
                     "CAMPAIGN_TITLE": str(campaign["title"]),
                     "RECIPIENT_EMAIL": intended_email,
+                    "FIRST_NAME": nm.get("firstname", ""),
+                    "LAST_NAME": nm.get("lastname", ""),
                 }
                 previews.append(
                     {

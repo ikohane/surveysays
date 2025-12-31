@@ -1,8 +1,13 @@
-email,site,role
-alice@example.com,SiteA,attending
-bob@example.com,SiteA,resident
-carol@example.com,SiteB,attending
-dave@example.com,SiteB,resident
-erin@example.com,SiteC,attending
+email,firstname,lastname,site,role
+alice@example.com,Alice,Anderson,SiteA,attending
+bob@example.com,Bob,Brown,SiteA,resident
+carol@example.com,Carol,Clark,SiteB,attending
+dave@example.com,Dave,Davis,SiteB,resident
+erin@example.com,Erin,Edwards,SiteC,attending
+frank@example.com,Frank,Foster,SiteC,resident
+grace@example.com,Grace,Green,SiteD,attending
+heidi@example.com,Heidi,Hughes,SiteD,resident
+ivan@example.com,Ivan,Irwin,SiteE,attending
+judy@example.com,Judy,Jones,SiteE,resident
 
 

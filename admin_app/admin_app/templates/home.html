@@ -23,7 +23,7 @@
         <input type="file" name="file" accept=".csv,text/csv" required />
         <div style="height: 10px;"></div>
         <button type="submit">Import Recipients</button>
-        <div class="muted" style="margin-top:8px;">Required column: email. Other columns become strata.</div>
+        <div class="muted" style="margin-top:8px;">Required columns: email, firstname, lastname. Other columns become strata.</div>
       </form>
       <form class="card" style="margin:0;" action="{{ url_for('import_templates') }}" method="post" enctype="multipart/form-data">
         <h3 style="margin-top:0;">Import templates.csv</h3>

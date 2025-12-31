@@ -91,11 +91,42 @@ def parse_recipient_row(row: dict[str, str], *, row_name: str) -> RecipientRow:
     """
     Required columns:
       - email
+      - firstname
+      - lastname
 
     All other columns are treated as strata/metadata (strings).
     """
-    email = _get_required(row, "email", row_name=row_name).lower()
-    strata = {k: (v or "").strip() for k, v in row.items() if k != "email" and (v or "").strip() != ""}
+    # Normalize header keys for case-insensitivity and to support common variants.
+    norm: dict[str, str] = {(k or "").strip().lower(): (v or "") for k, v in row.items()}
+
+    email = _get_required(norm, "email", row_name=row_name).lower()
+
+    def _get_first_like(keys: list[str]) -> str:
+        for k in keys:
+            v = (norm.get(k) or "").strip()
+            if v:
+                return v
+        raise CsvContractError(f"{row_name}: missing required column 'firstname' (or empty value)")
+
+    def _get_last_like(keys: list[str]) -> str:
+        for k in keys:
+            v = (norm.get(k) or "").strip()
+            if v:
+                return v
+        raise CsvContractError(f"{row_name}: missing required column 'lastname' (or empty value)")
+
+    firstname = _get_first_like(["firstname", "first_name", "first name", "givenname", "given_name"])
+    lastname = _get_last_like(["lastname", "last_name", "last name", "surname", "familyname", "family_name"])
+
+    # Store normalized strata keys (lowercase) and include firstname/lastname explicitly.
+    strata = {
+        k: (v or "").strip()
+        for k, v in norm.items()
+        if k not in {"email"} and (v or "").strip() != ""
+    }
+    strata["firstname"] = firstname
+    strata["lastname"] = lastname
+
     return RecipientRow(email=email, strata=strata)
 
 

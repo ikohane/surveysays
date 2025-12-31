@@ -119,6 +119,8 @@ def create_or_update_campaign_template(*, campaign_key: str, template_id: str | 
         {"key": "SURVEY_LINK", "type": "string", "fallbackValue": "http://127.0.0.1:5055/"},
         {"key": "CAMPAIGN_TITLE", "type": "string", "fallbackValue": campaign_key},
         {"key": "RECIPIENT_EMAIL", "type": "string", "fallbackValue": "recipient@example.com"},
+        {"key": "FIRST_NAME", "type": "string", "fallbackValue": "First"},
+        {"key": "LAST_NAME", "type": "string", "fallbackValue": "Last"},
     ]
     name = f"{campaign_key}"
     if template_id:
@@ -163,6 +165,8 @@ def send_invites_for_campaign(
     for inv in invitations:
         intended_email = str(inv.get("email") or "")
         token = str(inv.get("token") or "")
+        first_name = str(inv.get("first_name") or "")
+        last_name = str(inv.get("last_name") or "")
         survey_link = base_url.rstrip("/") + f"/s/{token}"
 
         now = time.monotonic()
@@ -181,6 +185,8 @@ def send_invites_for_campaign(
                         "SURVEY_LINK": survey_link,
                         "CAMPAIGN_TITLE": campaign_title,
                         "RECIPIENT_EMAIL": intended_email,
+                        "FIRST_NAME": first_name,
+                        "LAST_NAME": last_name,
                     },
                 )
                 break

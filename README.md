@@ -133,8 +133,10 @@ Optional:
 
 ### `recipients.csv`
 
-Required column:
+Required columns:
 - `email`
+- `firstname`
+- `lastname`
 
 All other columns become `recipientStrata` metadata.
 
