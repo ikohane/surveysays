@@ -4,7 +4,9 @@
     <div class="actions" style="justify-content: space-between;">
       <div>
         <h2 style="margin: 0;">Master view</h2>
-        <div class="muted">Campaign: {{ campaign['campaign_key'] }} · Strategy: {{ campaign['picker_strategy'] }} · K={{ campaign['k'] }}</div>
+        <div class="muted">
+          Campaign: {{ campaign['campaign_key'] }} · Strategy: {{ campaign['picker_strategy'] }} · K={{ campaign['k'] }} · Mode: <strong>{{ admin_mode }}</strong>
+        </div>
       </div>
       <div class="actions">
         <a href="{{ url_for('campaign_detail', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Campaign</button></a>
@@ -91,18 +93,69 @@
       <tbody>
         {% for r in recent_submissions %}
           <tr>
-            <td>{{ r['submitted_at'] }}</td>
+            <td>{{ r['submitted_at']|edt }}</td>
             <td><code>{{ r['email'] }}</code></td>
             <td><code style="font-size:12px;">{{ r['token'][:8] }}…</code></td>
             <td>{{ r['opened_at'] or '' }}</td>
             <td><code style="font-size:12px;">{{ (r['questionnaire_hash'] or '')[:10] }}{% if r['questionnaire_hash'] %}…{% endif %}</code></td>
-            <td><a href="{{ url_for('respondent_open', token=r['token']) }}"><code>/s/{{ r['token'][:8] }}…</code></a></td>
+            <td>
+              {% if admin_mode == 'cloud' and cloud_base_url %}
+                <a href="{{ cloud_base_url }}/s/{{ r['token'] }}"><code>/s/{{ r['token'][:8] }}…</code></a>
+              {% else %}
+                <a href="{{ url_for('respondent_open', token=r['token']) }}"><code>/s/{{ r['token'][:8] }}…</code></a>
+              {% endif %}
+            </td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
     {% if recent_submissions|length == 0 %}
       <div class="muted">No submissions yet for this campaign.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Cloud mode sync (Cloudflare → local SQLite)</h3>
+    {% if admin_mode != 'cloud' %}
+      <div class="muted">
+        You are in <strong>Local</strong> mode. Cloud submissions are not auto-synced into SQLite.
+        Switch to <strong>Cloud</strong> mode on the home screen to enable sync.
+      </div>
+    {% elif not cloud_base_url %}
+      <div class="muted">Not configured. Set <code>CLOUDFLARE_STUDY_BASE_URL</code> to enable cloud sync.</div>
+    {% elif not cloud_admin_token_present %}
+      <div class="muted">
+        Set <code>CLOUDFLARE_ADMIN_TOKEN</code> in your environment to sync submissions via <code>/api/admin/export/&lt;campaignKey&gt;</code>.
+      </div>
+    {% elif cloud_sync_error %}
+      <div class="muted" style="color:#b91c1c;">
+        Cloud sync error: <code>{{ cloud_sync_error }}</code>
+      </div>
+    {% else %}
+      <div class="muted">
+        In Cloud mode, respondents submit on Cloudflare and this page syncs submissions down into your local SQLite so analysis/exports work locally.
+      </div>
+      <div style="height: 10px;"></div>
+      <div class="actions">
+        <form action="{{ url_for('cloud_sync_now', campaign_key=campaign['campaign_key']) }}" method="post">
+          <button type="submit">Sync from Cloudflare now</button>
+        </form>
+      </div>
+      <div style="height: 10px;"></div>
+      {% if cloud_sync_status %}
+        <div>
+          Last sync epoch: <code>{{ cloud_sync_status.get('last_synced_epoch', '') }}</code>
+          · upserted submissions: <strong>{{ cloud_sync_status.get('local_submissions_upserted', 0) }}</strong>
+          · answers written: <strong>{{ cloud_sync_status.get('local_answers_written', 0) }}</strong>
+        </div>
+        {% if cloud_sync_status.get('missing_email', 0) or cloud_sync_status.get('missing_questionnaire', 0) %}
+          <div class="muted" style="margin-top: 6px;">
+            Missing email mappings: {{ cloud_sync_status.get('missing_email', 0) }} · Missing local questionnaire snapshots: {{ cloud_sync_status.get('missing_questionnaire', 0) }}
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="muted">No sync status available yet (it will appear after the first sync).</div>
+      {% endif %}
     {% endif %}
   </div>
 
@@ -134,7 +187,7 @@
       <div style="height: 10px;"></div>
       <div class="muted">
         {% if cloud_last_upload %}
-          Last push: <strong>{{ cloud_last_upload['created_at'] }}</strong> · Request hash: <code>{{ cloud_last_upload['request_hash'][:10] }}…</code>
+          Last push: <strong>{{ cloud_last_upload['created_at']|edt }}</strong> · Request hash: <code>{{ cloud_last_upload['request_hash'][:10] }}…</code>
         {% else %}
           No pushes recorded yet for this campaign.
         {% endif %}
@@ -157,7 +210,7 @@
               <tr>
                 <td><code>{{ r['email'] }}</code></td>
                 <td><code style="font-size:12px;">{{ r['cloud_token'][:8] }}…</code></td>
-                <td>{{ r['uploaded_at'] }}</td>
+                <td>{{ r['uploaded_at']|edt }}</td>
                 <td><a href="{{ cloud_base_url }}/s/{{ r['cloud_token'] }}"><code>/s/{{ r['cloud_token'][:8] }}…</code></a></td>
               </tr>
             {% endfor %}
@@ -179,7 +232,7 @@
           <details style="margin-bottom: 10px;">
             <summary style="cursor: pointer;">
               <span class="pill">Wave</span>
-              <strong>{{ p['created_at'] }}</strong>
+              <strong>{{ p['created_at']|edt }}</strong>
               · tokens: {{ p['n_tokens'] }}
               · hash: <code>{{ p['request_hash'][:10] }}…</code>
             </summary>
@@ -215,6 +268,22 @@
   </div>
 
   <div class="card">
+    <h3 style="margin-top:0;">Layout (YAML)</h3>
+    <div class="muted">
+      Per-campaign layout config for respondent UI. This config is used locally and is pushed to Cloudflare as a parsed <code>layoutConfig</code>.
+    </div>
+    <div style="height: 10px;"></div>
+    <form action="{{ url_for('update_layout_yaml', campaign_key=campaign['campaign_key']) }}" method="post">
+      <textarea name="layout_yaml" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ layout_yaml }}</textarea>
+      <div style="height: 10px;"></div>
+      <button class="secondary" type="submit">Save layout YAML</button>
+    </form>
+    <div class="muted" style="margin-top: 10px;">
+      Effective layoutConfig: <code>{{ layout_config | tojson }}</code>
+    </div>
+  </div>
+
+  <div class="card">
     <h3 style="margin-top:0;">Invites ledger (all recipients)</h3>
     <div class="muted">Scrollable view of each invite with statuses: invited/opened/assigned/submitted.</div>
     <div style="height: 10px;"></div>
@@ -240,7 +309,13 @@
               <td>{% if r['questionnaire_hash'] %}yes{% else %}{% endif %}</td>
               <td>{% if r['submitted_at'] %}yes{% else %}{% endif %}</td>
               <td><code style="font-size:12px;">{{ r['token'][:8] }}…</code></td>
-              <td><a href="{{ url_for('respondent_open', token=r['token']) }}"><code>/s/{{ r['token'][:8] }}…</code></a></td>
+              <td>
+                {% if admin_mode == 'cloud' and cloud_base_url %}
+                  <a href="{{ cloud_base_url }}/s/{{ r['token'] }}"><code>/s/{{ r['token'][:8] }}…</code></a>
+                {% else %}
+                  <a href="{{ url_for('respondent_open', token=r['token']) }}"><code>/s/{{ r['token'][:8] }}…</code></a>
+                {% endif %}
+              </td>
             </tr>
           {% endfor %}
         </tbody>
@@ -266,7 +341,7 @@
         <tbody>
           {% for row in event_log %}
             <tr>
-              <td>{{ row['created_at'] }}</td>
+              <td>{{ row['created_at']|edt }}</td>
               <td>{{ row['campaign_key'] or 'global' }}</td>
               <td><code>{{ row['event'] }}</code></td>
               <td>
@@ -294,7 +369,7 @@
       <li>{% if campaign['picker_strategy'] == 'online_assign' %}Prepare online_assign{% else %}Generate variants{% endif %}</li>
       <li>Configure email settings</li>
       <li>Dry-run preview</li>
-      <li>Send invitation emails (forced to kohane@gmail.com during MVP)</li>
+      <li>Send invitation emails (forced to r1@study.hvp.global during MVP)</li>
     </ol>
   </div>
 
@@ -357,7 +432,7 @@
   <div class="card">
     <h3 style="margin-top:0;">Email (Resend) settings</h3>
     <div class="muted">
-      Safety: during MVP testing, sends will be forced to <code>kohane@gmail.com</code>. The intended recipient is still available via <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code>.
+      Safety: during MVP testing, sends will be forced to <code>r1@study.hvp.global</code>. The intended recipient is still available via <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code>.
     </div>
     <div class="muted" style="margin-top: 6px;">
       Link behavior: <strong>online_assign</strong> assigns on first open; <strong>offline</strong> renders the pre-generated snapshot.
@@ -392,8 +467,8 @@
         <code>{% raw %}{{{SURVEY_LINK}}}{% endraw %}</code>,
         <code>{% raw %}{{{CAMPAIGN_TITLE}}}{% endraw %}</code>,
         <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code>,
-        <code>{% raw %}{{{FIRST_NAME}}}{% endraw %}</code>,
-        <code>{% raw %}{{{LAST_NAME}}}{% endraw %}</code>
+        <code>{% raw %}{{{RECIPIENT_FIRST_NAME}}}{% endraw %}</code>,
+        <code>{% raw %}{{{RECIPIENT_LAST_NAME}}}{% endraw %}</code>
       </div>
       <div style="height: 8px;"></div>
       <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ campaign['email_html'] or '' }}</textarea>
@@ -402,7 +477,7 @@
     </form>
     <div style="height: 10px;"></div>
     <form action="{{ url_for('send_emails', campaign_key=campaign['campaign_key']) }}" method="post">
-      <button type="submit">Send invitation emails (forced to kohane@gmail.com)</button>
+      <button type="submit">Send invitation emails (forced to r1@study.hvp.global)</button>
     </form>
     <div style="height: 10px;"></div>
     <a href="{{ url_for('email_preview', campaign_key=campaign['campaign_key']) }}">

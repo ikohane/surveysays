@@ -1,5 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
+  <style>
+    .qcard { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; margin: 0 0 16px 0; }
+    .qhdr { font-size: 12px; color: #6b7280; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .qprompt { margin-top: 6px; font-size: 15px; font-weight: 700; color: #111827; }
+    .choices2 { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
+    @media (min-width: 760px) { .choices2 { grid-template-columns: 1fr 1fr; } }
+    .choiceCard { border: 2px solid #e5e7eb; border-radius: 12px; padding: 12px; background: #fff; cursor: pointer; position: relative; display:block; }
+    .choiceCard:hover { border-color: #c7d2fe; }
+    .choiceCard.selected { border-color: #2563eb; background: #eef2ff; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+    .choiceTop { display:flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .choiceTitle { font-weight: 700; }
+    .check { width: 18px; height: 18px; border-radius: 999px; border: 2px solid #9ca3af; display:flex; align-items:center; justify-content:center; font-size: 12px; color: transparent; }
+    .choiceCard.selected .check { border-color: #2563eb; background: #2563eb; color: white; }
+    .choiceVignette { margin-top: 10px; white-space: pre-wrap; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+    .hiddenRadio { position: absolute; opacity: 0; pointer-events: none; }
+    .vpanel { white-space: pre-wrap; background: #f3f4f6; padding: 12px; border-radius: 8px; margin-top: 10px; }
+  </style>
+
   <div class="card">
     <h2 style="margin:0 0 6px 0;">Respondent view (simulated)</h2>
     <div class="muted">
@@ -12,38 +30,8 @@
 
   <div class="card">
     <h3 style="margin-top:0;">Rendered</h3>
-    {% set blocks = qjson['blocks'] %}
-    <form method="post" action="{{ url_for('respondent_submit', token=token) }}">
-    {% for b in blocks %}
-      {% if b['type'] == 'vignette' %}
-        <div class="card" style="margin: 0 0 10px 0;">
-          <div class="pill">Vignette</div>
-          <div style="height: 6px;"></div>
-          <div style="white-space: pre-wrap;">{{ b['text'] }}</div>
-        </div>
-      {% elif b['type'] == 'singleSelect' %}
-        <div class="card" style="margin: 0;">
-          <div class="pill">Single Select</div>
-          <div style="height: 6px;"></div>
-          <div style="font-weight: 700;">{{ b['prompt'] }}</div>
-          <div style="height: 10px;"></div>
-          {% for c in b['choices'] %}
-            <label style="display:flex; gap:10px; align-items:center; margin-bottom: 8px;">
-              <input type="radio" name="ans__{{ b['id'] }}" value="{{ c['id'] }}" required />
-              <span><strong>{{ c['id'] }}</strong> — {{ c['label'] }}</span>
-            </label>
-          {% endfor %}
-        </div>
-      {% elif b['type'] == 'freeText' %}
-        <div class="card" style="margin: 0;">
-          <div class="pill">Free Text</div>
-          <div style="height: 6px;"></div>
-          <div style="font-weight: 700;">{{ b['prompt'] }}</div>
-          <div style="height: 10px;"></div>
-          <input type="text" name="ans__{{ b['id'] }}" placeholder="Type your answer..." required />
-        </div>
-      {% endif %}
-    {% endfor %}
+    <form id="form" method="post" action="{{ url_for('respondent_submit', token=token) }}">
+      <div id="blocks"></div>
       <div style="height: 12px;"></div>
       <button type="submit">Submit</button>
     </form>
@@ -53,6 +41,164 @@
     <h3 style="margin-top:0;">Questionnaire JSON (snapshotted)</h3>
     <pre>{{ qjson | tojson(indent=2) }}</pre>
   </div>
+
+  <script>
+    const QJSON = {{ qjson | tojson }};
+    const LAYOUT = {{ layout_config | tojson }};
+
+    function splitPatientsFromVignette(text) {
+      const s = String(text || "").trim();
+      if (!s) return [""];
+      const parts = s.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+      return parts.length ? parts : [s];
+    }
+
+    function groupBlocks(blocks) {
+      const groups = [];
+      let vbuf = [];
+      for (const b of blocks) {
+        if (b.type === "vignette") {
+          vbuf.push(String(b.text || ""));
+          continue;
+        }
+        if (b.type === "singleSelect" || b.type === "freeText") {
+          groups.push({ promptBlock: b, vignetteTexts: vbuf });
+          vbuf = [];
+        }
+      }
+      if (vbuf.length) groups.push({ promptBlock: null, vignetteTexts: vbuf });
+      return groups;
+    }
+
+    function renderSingleSelectCards(container, b, vignetteTexts) {
+      const wrap = document.createElement("div");
+      wrap.className = "choices2";
+      const name = "ans__" + String(b.id);
+      const choices = Array.isArray(b.choices) ? b.choices : [];
+      const vignetteCombined = vignetteTexts.join("\n\n");
+      const patientParts = splitPatientsFromVignette(vignetteCombined);
+      const pickV = (i) => (patientParts.length >= 2 ? (patientParts[i] || "") : vignetteCombined);
+
+      function addCard(c, i) {
+        const cid = String(c.id);
+        const card = document.createElement("label");
+        card.className = "choiceCard";
+
+        const radio = document.createElement("input");
+        radio.className = "hiddenRadio";
+        radio.type = "radio";
+        radio.name = name;
+        radio.value = cid;
+        radio.required = !!b.required;
+
+        const top = document.createElement("div");
+        top.className = "choiceTop";
+        const title = document.createElement("div");
+        title.className = "choiceTitle";
+        title.textContent = String(c.label || cid);
+        const check = document.createElement("div");
+        check.className = "check";
+        check.textContent = "✓";
+        top.appendChild(title);
+        top.appendChild(check);
+
+        const vigText = pickV(i);
+        const vig = document.createElement("div");
+        vig.className = "choiceVignette";
+        vig.textContent = vigText;
+
+        const syncSelected = () => {
+          const selected = radio.checked;
+          card.classList.toggle("selected", selected);
+        };
+        radio.addEventListener("change", () => {
+          for (const el of wrap.querySelectorAll("label.choiceCard")) el.classList.remove("selected");
+          radio.checked = true;
+          syncSelected();
+        });
+
+        card.appendChild(radio);
+        card.appendChild(top);
+        if (vigText) card.appendChild(vig);
+        wrap.appendChild(card);
+      }
+
+      if (choices.length === 2 && LAYOUT.singleSelect && LAYOUT.singleSelect.layout === "cards") {
+        addCard(choices[0], 0);
+        addCard(choices[1], 1);
+        container.appendChild(wrap);
+        return;
+      }
+
+      // fallback radios
+      for (const c of choices) {
+        const row = document.createElement("label");
+        row.style.display = "flex";
+        row.style.gap = "10px";
+        row.style.alignItems = "center";
+        row.style.marginBottom = "8px";
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = name;
+        radio.value = String(c.id);
+        radio.required = !!b.required;
+        const span = document.createElement("span");
+        span.textContent = String(c.label || c.id);
+        row.appendChild(radio);
+        row.appendChild(span);
+        container.appendChild(row);
+      }
+    }
+
+    function render() {
+      const el = document.getElementById("blocks");
+      el.innerHTML = "";
+      const blocks = Array.isArray(QJSON.blocks) ? QJSON.blocks : [];
+      const groups = groupBlocks(blocks);
+      groups.forEach((g, idx) => {
+        const qc = document.createElement("div");
+        qc.className = "qcard";
+        qc.style.marginBottom = String((LAYOUT.questionDemarcation && LAYOUT.questionDemarcation.gapPx) || 16) + "px";
+        const hdr = document.createElement("div");
+        hdr.className = "qhdr";
+        hdr.textContent = g.promptBlock ? ("Question " + (idx + 1)) : "Note";
+        qc.appendChild(hdr);
+
+        if (g.promptBlock) {
+          const b = g.promptBlock;
+          const prompt = document.createElement("div");
+          prompt.className = "qprompt";
+          prompt.textContent = String(b.prompt || "");
+          qc.appendChild(prompt); // prompt-first
+
+          if (b.type === "singleSelect") {
+            renderSingleSelectCards(qc, b, g.vignetteTexts);
+          } else if (b.type === "freeText") {
+            const inp = document.createElement("input");
+            inp.type = "text";
+            inp.name = "ans__" + String(b.id);
+            inp.required = !!b.required;
+            inp.placeholder = "Type your answer…";
+            qc.appendChild(inp);
+            if (g.vignetteTexts.length) {
+              const vp = document.createElement("div");
+              vp.className = "vpanel";
+              vp.textContent = g.vignetteTexts.join("\n\n");
+              qc.appendChild(vp);
+            }
+          }
+        } else {
+          const vp = document.createElement("div");
+          vp.className = "vpanel";
+          vp.textContent = g.vignetteTexts.join("\n\n");
+          qc.appendChild(vp);
+        }
+        el.appendChild(qc);
+      });
+    }
+
+    render();
+  </script>
 {% endblock %}
 
 

@@ -18,7 +18,7 @@ class ResendError(RuntimeError):
 
 
 RESEND_API_BASE = "https://api.resend.com"
-FORCED_TEST_TO_EMAIL = "kohane@gmail.com"
+FORCED_TEST_TO_EMAIL = "r1@study.hvp.global"
 
 
 def _require_api_key() -> str:
@@ -126,8 +126,8 @@ def create_or_update_campaign_template(*, campaign_key: str, template_id: str | 
         {"key": "SURVEY_LINK", "type": "string", "fallbackValue": "http://127.0.0.1:5055/"},
         {"key": "CAMPAIGN_TITLE", "type": "string", "fallbackValue": campaign_key},
         {"key": "RECIPIENT_EMAIL", "type": "string", "fallbackValue": "recipient@example.com"},
-        {"key": "FIRST_NAME", "type": "string", "fallbackValue": "First"},
-        {"key": "LAST_NAME", "type": "string", "fallbackValue": "Last"},
+        {"key": "RECIPIENT_FIRST_NAME", "type": "string", "fallbackValue": "First"},
+        {"key": "RECIPIENT_LAST_NAME", "type": "string", "fallbackValue": "Last"},
     ]
     name = f"{campaign_key}"
     if template_id:
@@ -192,8 +192,8 @@ def send_invites_for_campaign(
                         "SURVEY_LINK": survey_link,
                         "CAMPAIGN_TITLE": campaign_title,
                         "RECIPIENT_EMAIL": intended_email,
-                        "FIRST_NAME": first_name,
-                        "LAST_NAME": last_name,
+                        "RECIPIENT_FIRST_NAME": first_name,
+                        "RECIPIENT_LAST_NAME": last_name,
                     },
                 )
                 break

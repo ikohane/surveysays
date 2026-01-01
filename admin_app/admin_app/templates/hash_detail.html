@@ -37,7 +37,7 @@
           <tr>
             <td>{{ r['email'] }}</td>
             <td>{{ r['case_id'] }}</td>
-            <td class="muted">{{ r['created_at'] }}</td>
+            <td class="muted">{{ r['created_at']|edt }}</td>
           </tr>
         {% endfor %}
       </tbody>

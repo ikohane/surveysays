@@ -3,3 +3,5 @@ t_001,"A {age}-year-old with {symptom} for {duration} days.","What is the best n
 t_002,"Patient presents after {event} with {finding}.","Which option is most appropriate?","Give {drug}","Order imaging","Observe","Discharge","template|demo","variables:\n  event: {pool: event, method: cycle}\n  finding: {pool: finding, method: cycle}\n  drug: {pool: drug, method: cycle}\n"
 
 
+
+

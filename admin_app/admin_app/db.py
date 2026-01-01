@@ -19,12 +19,26 @@ def _utc_now_sql() -> str:
 SCHEMA_SQL = f"""
 PRAGMA foreign_keys = ON;
 
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cloud_sync_state (
+  campaign_id INTEGER NOT NULL,
+  cloud_base_url TEXT NOT NULL,
+  last_synced_at TEXT,
+  PRIMARY KEY (campaign_id, cloud_base_url),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS campaigns (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   campaign_key TEXT NOT NULL UNIQUE,
   title TEXT NOT NULL,
   seed INTEGER NOT NULL,
   questionnaire_version INTEGER NOT NULL,
+  layout_yaml TEXT,
   email_from TEXT,
   email_subject TEXT,
   email_html TEXT,
@@ -196,6 +210,7 @@ class Db:
         with self.connect() as conn:
             conn.executescript(SCHEMA_SQL)
             # Lightweight migrations for existing DBs
+            _ensure_settings_tables(conn)
             _ensure_campaign_columns(conn)
             _ensure_invitations_columns(conn)
             _ensure_question_stats_columns(conn)
@@ -211,15 +226,102 @@ def _try_add_column(conn: sqlite3.Connection, table: str, column_def: str) -> No
         pass
 
 
+def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
+    row = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
+        (table,),
+    ).fetchone()
+    return row is not None
+
+
+def _ensure_settings_tables(conn: sqlite3.Connection) -> None:
+    # Older DBs may not have app_settings.
+    if not _table_exists(conn, "app_settings"):
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_settings (
+              key TEXT PRIMARY KEY,
+              value TEXT NOT NULL
+            )
+            """
+        )
+
+    if not _table_exists(conn, "cloud_sync_state"):
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS cloud_sync_state (
+              campaign_id INTEGER NOT NULL,
+              cloud_base_url TEXT NOT NULL,
+              last_synced_at TEXT,
+              PRIMARY KEY (campaign_id, cloud_base_url),
+              FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+            )
+            """
+        )
+
+
 def _ensure_campaign_columns(conn: sqlite3.Connection) -> None:
     _try_add_column(conn, "campaigns", "picker_strategy TEXT NOT NULL DEFAULT 'pick_k_cases'")
     _try_add_column(conn, "campaigns", "k INTEGER NOT NULL DEFAULT 1")
     _try_add_column(conn, "campaigns", "param_vector_json TEXT")
+    _try_add_column(conn, "campaigns", "layout_yaml TEXT")
     _try_add_column(conn, "campaigns", "email_from TEXT")
     _try_add_column(conn, "campaigns", "email_subject TEXT")
     _try_add_column(conn, "campaigns", "email_html TEXT")
     _try_add_column(conn, "campaigns", "email_template_id TEXT")
     _try_add_column(conn, "campaigns", "email_base_url TEXT")
+
+
+DEFAULT_LAYOUT_YAML = """version: 1
+prompt_first: true
+question_demarcation:
+  style: card
+  gap_px: 16
+single_select:
+  layout: cards
+  selected_style: highlight
+"""
+
+
+def get_setting(conn: sqlite3.Connection, *, key: str) -> str | None:
+    row = conn.execute("SELECT value FROM app_settings WHERE key = ?", (key,)).fetchone()
+    if not row:
+        return None
+    return str(row["value"])
+
+
+def set_setting(conn: sqlite3.Connection, *, key: str, value: str) -> None:
+    conn.execute(
+        """
+        INSERT INTO app_settings (key, value)
+        VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        """,
+        (key, value),
+    )
+
+
+def get_cloud_last_synced_at(conn: sqlite3.Connection, *, campaign_id: int, cloud_base_url: str) -> str | None:
+    row = conn.execute(
+        "SELECT last_synced_at FROM cloud_sync_state WHERE campaign_id = ? AND cloud_base_url = ?",
+        (campaign_id, cloud_base_url),
+    ).fetchone()
+    if not row:
+        return None
+    v = row["last_synced_at"]
+    return str(v) if v else None
+
+
+def set_cloud_last_synced_at(conn: sqlite3.Connection, *, campaign_id: int, cloud_base_url: str, last_synced_at: str) -> None:
+    conn.execute(
+        """
+        INSERT INTO cloud_sync_state (campaign_id, cloud_base_url, last_synced_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(campaign_id, cloud_base_url) DO UPDATE SET
+          last_synced_at = excluded.last_synced_at
+        """,
+        (campaign_id, cloud_base_url, last_synced_at),
+    )
 
 
 def _ensure_invitations_columns(conn: sqlite3.Connection) -> None:
@@ -464,14 +566,14 @@ def upsert_campaign(
 ) -> int:
     conn.execute(
         """
-        INSERT INTO campaigns (campaign_key, title, seed, questionnaire_version)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO campaigns (campaign_key, title, seed, questionnaire_version, layout_yaml)
+        VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(campaign_key) DO UPDATE SET
           title = excluded.title,
           seed = excluded.seed,
           questionnaire_version = excluded.questionnaire_version
         """,
-        (campaign_key, title, seed, questionnaire_version),
+        (campaign_key, title, seed, questionnaire_version, DEFAULT_LAYOUT_YAML),
     )
     row = conn.execute(
         "SELECT id FROM campaigns WHERE campaign_key = ?",
@@ -486,6 +588,13 @@ def get_campaign_by_key(conn: sqlite3.Connection, *, campaign_key: str) -> sqlit
         "SELECT * FROM campaigns WHERE campaign_key = ?",
         (campaign_key,),
     ).fetchone()
+
+
+def update_campaign_layout_yaml(conn: sqlite3.Connection, *, campaign_key: str, layout_yaml: str) -> None:
+    conn.execute(
+        "UPDATE campaigns SET layout_yaml = ? WHERE campaign_key = ?",
+        (layout_yaml, campaign_key),
+    )
 
 
 def list_campaigns(conn: sqlite3.Connection) -> list[sqlite3.Row]:
@@ -989,8 +1098,41 @@ def insert_submission_answer(
         INSERT INTO submission_answers
           (campaign_id, token, block_id, block_type, value_text, value_choice_id)
         VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(campaign_id, token, block_id) DO UPDATE SET
+          block_type = excluded.block_type,
+          value_text = excluded.value_text,
+          value_choice_id = excluded.value_choice_id,
+          created_at = CURRENT_TIMESTAMP
         """,
         (campaign_id, token, block_id, block_type, value_text, value_choice_id),
+    )
+
+
+def upsert_submission_from_cloud(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    token: str,
+    email: str,
+    answers_json: str,
+    submitted_at: str,
+) -> None:
+    """
+    Idempotent upsert for Cloudflare→local sync.
+    - Stores the cloud submission timestamp (submitted_at) verbatim.
+    - Overwrites answers_json if re-synced.
+    """
+    conn.execute(
+        """
+        INSERT INTO submissions (campaign_id, token, email, answers_json, submitted_at)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(token) DO UPDATE SET
+          campaign_id = excluded.campaign_id,
+          email = excluded.email,
+          answers_json = excluded.answers_json,
+          submitted_at = excluded.submitted_at
+        """,
+        (campaign_id, token, email, answers_json, submitted_at),
     )
 
 
@@ -1035,6 +1177,58 @@ def list_recent_submissions(conn: sqlite3.Connection, *, campaign_id: int, limit
     )
 
 
+def list_cloud_recent_submissions(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    cloud_base_url: str,
+    limit: int = 25,
+) -> list[sqlite3.Row]:
+    """
+    Recent submissions for Cloud mode (tokens are Cloudflare tokens, not local invitation tokens).
+    We join submissions.token -> cloud_invitation_tokens.cloud_token to recover email and then
+    pull the latest local questionnaire_hash for that email from invitation_variants.
+    """
+    # Use latest token per email (computed from history).
+    return list(
+        conn.execute(
+            """
+            WITH latest_token AS (
+              SELECT t.email, t.cloud_token
+              FROM cloud_invitation_tokens t
+              JOIN (
+                SELECT email, MAX(uploaded_at) AS max_uploaded_at
+                FROM cloud_invitation_tokens
+                WHERE campaign_id = ? AND cloud_base_url = ?
+                GROUP BY email
+              ) x
+                ON x.email = t.email AND x.max_uploaded_at = t.uploaded_at
+              WHERE t.campaign_id = ? AND t.cloud_base_url = ?
+            )
+            SELECT
+              s.submitted_at,
+              lt.email,
+              s.token,
+              NULL AS opened_at,
+              (
+                SELECT questionnaire_hash
+                FROM invitation_variants iv
+                WHERE iv.campaign_id = ? AND iv.email = lt.email
+                ORDER BY iv.created_at DESC
+                LIMIT 1
+              ) AS questionnaire_hash
+            FROM submissions s
+            JOIN latest_token lt
+              ON lt.cloud_token = s.token
+            WHERE s.campaign_id = ?
+            ORDER BY s.submitted_at DESC
+            LIMIT ?
+            """,
+            (campaign_id, cloud_base_url, campaign_id, cloud_base_url, campaign_id, campaign_id, limit),
+        ).fetchall()
+    )
+
+
 def list_invitation_ledger_rows(conn: sqlite3.Connection, *, campaign_id: int) -> list[sqlite3.Row]:
     """
     One row per invitation with status columns:
@@ -1060,6 +1254,48 @@ def list_invitation_ledger_rows(conn: sqlite3.Connection, *, campaign_id: int) -
             ORDER BY i.email
             """,
             (campaign_id,),
+        ).fetchall()
+    )
+
+
+def list_cloud_invitation_ledger_rows(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    cloud_base_url: str,
+) -> list[sqlite3.Row]:
+    """
+    One row per email based on latest Cloudflare token (cloud_invitation_tokens) for the campaign/base_url.
+    This is used in Cloud mode so 'submitted' reflects submissions keyed by cloud tokens.
+    """
+    return list(
+        conn.execute(
+            """
+            WITH latest AS (
+              SELECT t.email, t.cloud_token, MAX(t.uploaded_at) AS max_uploaded_at
+              FROM cloud_invitation_tokens t
+              WHERE t.campaign_id = ? AND t.cloud_base_url = ?
+              GROUP BY t.email
+            )
+            SELECT
+              l.email,
+              l.max_uploaded_at AS invited_at,
+              NULL AS opened_at,
+              (
+                SELECT questionnaire_hash
+                FROM invitation_variants iv
+                WHERE iv.campaign_id = ? AND iv.email = l.email
+                ORDER BY iv.created_at DESC
+                LIMIT 1
+              ) AS questionnaire_hash,
+              s.submitted_at,
+              l.cloud_token AS token
+            FROM latest l
+            LEFT JOIN submissions s
+              ON s.campaign_id = ? AND s.token = l.cloud_token
+            ORDER BY l.email
+            """,
+            (campaign_id, cloud_base_url, campaign_id, campaign_id),
         ).fetchall()
     )
 

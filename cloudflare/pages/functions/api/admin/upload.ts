@@ -43,10 +43,20 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
 
     const campaignKey = String(body?.campaignKey || "").trim();
     const invitations = body?.invitations;
+    const layoutConfig = body?.layoutConfig;
     if (!campaignKey) return jsonResponse({ error: "campaignKey required" }, { status: 400 });
     if (!Array.isArray(invitations)) return jsonResponse({ error: "invitations must be an array" }, { status: 400 });
 
     const campaignId = await ensureCampaignId(context.env, campaignKey);
+    if (layoutConfig && typeof layoutConfig === "object") {
+      try {
+        await context.env.DB.prepare("UPDATE campaigns SET layout_config_json = ? WHERE id = ?")
+          .bind(JSON.stringify(layoutConfig), Number(campaignId))
+          .run();
+      } catch (e: any) {
+        return jsonResponse({ error: `DB error updating campaign layout: ${String(e?.message || e)}` }, { status: 500 });
+      }
+    }
 
     const out: Array<{ email: string; token: string }> = [];
     for (let i = 0; i < invitations.length; i++) {

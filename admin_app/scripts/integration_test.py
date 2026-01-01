@@ -39,6 +39,8 @@ def main() -> None:
     # 1) Home should load
     r = client.get("/")
     assert r.status_code == 200, f"GET / expected 200, got {r.status_code}"
+    assert b"Admin mode" in r.data
+    assert b"name=\"admin_mode\"" in r.data
 
     # 2) Import cases.csv + recipients.csv
     cases_csv = (repo / "sample_data" / "cases.csv").read_bytes()
@@ -123,8 +125,11 @@ def main() -> None:
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     campaign_id_pickk = int(conn.execute("SELECT id FROM campaigns WHERE campaign_key = ?", (campaign_pickk,)).fetchone()["id"])
+    # Default layout_yaml should exist for new campaigns
+    layout_yaml = conn.execute("SELECT layout_yaml FROM campaigns WHERE id = ?", (campaign_id_pickk,)).fetchone()["layout_yaml"]
+    assert layout_yaml and "prompt_first" in str(layout_yaml)
     inv = conn.execute(
-        "SELECT token, questionnaire_json FROM invitations WHERE campaign_id = ? ORDER BY email LIMIT 1",
+        "SELECT email, token, questionnaire_json FROM invitations WHERE campaign_id = ? ORDER BY email LIMIT 1",
         (campaign_id_pickk,),
     ).fetchone()
     assert inv is not None
@@ -155,6 +160,78 @@ def main() -> None:
     assert r.status_code in (302, 303)
     r = client.post(f"/s/{inv['token']}/submit", data=answers_form_off)
     assert r.status_code == 409
+
+    # Layout YAML editor should be present and savable
+    r = client.get(f"/campaigns/{campaign_pickk}/master")
+    assert r.status_code == 200
+    assert b"Layout (YAML)" in r.data
+    new_yaml = "version: 1\nprompt_first: true\nquestion_demarcation:\n  style: card\n  gap_px: 20\nsingle_select:\n  layout: cards\n"
+    r = client.post(f"/campaigns/{campaign_pickk}/layout-yaml", data={"layout_yaml": new_yaml}, follow_redirects=True)
+    assert r.status_code == 200
+    assert b"Saved layout YAML" in r.data
+
+    # --- Cloud mode (mocked) sync into local SQLite ---
+    # Switch to Cloud mode globally
+    r = client.post("/settings/mode", data={"admin_mode": "cloud"}, follow_redirects=True)
+    assert r.status_code == 200
+    assert b"Current:" in r.data and b"cloud" in r.data
+
+    os.environ["CLOUDFLARE_STUDY_BASE_URL"] = "https://study-staging.hvp.global"
+    os.environ["CLOUDFLARE_ADMIN_TOKEN"] = "test"
+
+    # Create a fake cloud push + token mapping for this campaign/email
+    cloud_token = "TESTCLOUDTOKEN123"
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    push_id = conn.execute(
+        "INSERT INTO cloud_pushes (campaign_id, cloud_base_url, request_hash, response_json) VALUES (?, ?, ?, ?)",
+        (campaign_id_pickk, os.environ["CLOUDFLARE_STUDY_BASE_URL"], "testhash", "{}"),
+    ).lastrowid
+    conn.execute(
+        "INSERT INTO cloud_invitation_tokens (push_id, campaign_id, cloud_base_url, email, cloud_token) VALUES (?, ?, ?, ?, ?)",
+        (int(push_id), campaign_id_pickk, os.environ["CLOUDFLARE_STUDY_BASE_URL"], str(inv["email"]), cloud_token),
+    )
+    conn.commit()
+    conn.close()
+
+    # Inject a Cloudflare export payload (no network) with one submission.
+    # Use decision block ids from the local questionnaire snapshot.
+    answers_map = {}
+    for b in qj_off["blocks"]:
+        if b["type"] == "singleSelect":
+            answers_map[b["id"]] = b["choices"][0]["id"]
+        elif b["type"] == "freeText":
+            answers_map[b["id"]] = "hello"
+    export_obj = {
+        "campaignKey": campaign_pickk,
+        "submissions": [
+            {
+                "token": cloud_token,
+                "submitted_at": "2026-01-01 00:00:00.000",
+                "answers_json": json.dumps({"answers": answers_map}),
+            }
+        ],
+    }
+    os.environ["SURVEYSAYS_TEST_CLOUD_EXPORT_JSON"] = json.dumps(export_obj)
+
+    # Loading master should auto-sync into local SQLite (cloud mode).
+    r = client.get(f"/campaigns/{campaign_pickk}/master")
+    assert r.status_code == 200
+    assert b"Mode:" in r.data and b"cloud" in r.data
+    assert b"Cloud mode sync" in r.data
+
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    sub_n = int(conn.execute("SELECT COUNT(*) AS n FROM submissions WHERE campaign_id = ?", (campaign_id_pickk,)).fetchone()["n"])
+    ans_n = int(conn.execute("SELECT COUNT(*) AS n FROM submission_answers WHERE campaign_id = ?", (campaign_id_pickk,)).fetchone()["n"])
+    conn.close()
+    assert sub_n >= 1, "Expected cloud submission to be synced into local submissions table"
+    assert ans_n >= 1, "Expected cloud submission answers to be materialized into submission_answers"
+
+    # Clean up injected export and revert to Local mode for the rest of the test.
+    del os.environ["SURVEYSAYS_TEST_CLOUD_EXPORT_JSON"]
+    r = client.post("/settings/mode", data={"admin_mode": "local"}, follow_redirects=True)
+    assert r.status_code == 200
 
     payload1 = export_payload(campaign_pickk)
     assert len(payload1["invitations"]) == 10
@@ -333,8 +410,16 @@ def main() -> None:
             campaign={"campaign_key": "it_freeText"},
             email="freeText@example.com",
             qjson=q_free,
+            layout_config={
+                "version": 1,
+                "promptFirst": True,
+                "questionDemarcation": {"style": "card", "gapPx": 16},
+                "singleSelect": {"layout": "cards", "selectedStyle": "highlight"},
+            },
         )
-        assert "Free Text" in html
+        # JS renders blocks client-side; just ensure template renders and embeds the questionnaire + mount point.
+        assert 'id="blocks"' in html
+        assert "const QJSON" in html
 
     print("Integration test passed.")
 

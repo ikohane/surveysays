@@ -32,7 +32,8 @@ export async function getInvitationByToken(env: Env, token: string): Promise<any
   const row = await env.DB.prepare(
     `SELECT
       i.*,
-      c.campaign_key as campaign_key
+      c.campaign_key as campaign_key,
+      c.layout_config_json as layout_config_json
      FROM invitations i
      JOIN campaigns c ON c.id = i.campaign_id
      WHERE i.token = ?`

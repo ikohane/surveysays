@@ -25,6 +25,13 @@ export async function onRequest(context: { params: { token: string }; env: Env }
       questionnaireVersion: inv.questionnaire_version,
       questionnaireHash: inv.questionnaire_hash,
       questionnaireJson,
+      layoutConfig: (() => {
+        try {
+          return inv?.layout_config_json ? JSON.parse(String(inv.layout_config_json)) : null;
+        } catch {
+          return null;
+        }
+      })(),
     },
     { status: 200 }
   );

@@ -51,7 +51,7 @@
           <tr>
             <td><code>{{ r['email'] }}</code></td>
             <td><code style="font-size:12px;">{{ r['token'] }}</code></td>
-            <td>{{ r['opened_at'] or '' }}</td>
+            <td>{{ (r['opened_at']|edt) if r['opened_at'] else '' }}</td>
             <td><code style="font-size:12px;">{{ r['questionnaire_hash'] or '' }}</code></td>
           </tr>
         {% endfor %}
@@ -75,7 +75,7 @@
           <tr>
             <td><code>{{ r['email'] }}</code></td>
             <td><code style="font-size:12px;">{{ r['token'] }}</code></td>
-            <td>{{ r['opened_at'] or '' }}</td>
+            <td>{{ (r['opened_at']|edt) if r['opened_at'] else '' }}</td>
             <td><code style="font-size:12px;">{{ r['questionnaire_hash'] or '' }}</code></td>
           </tr>
         {% endfor %}
@@ -99,7 +99,7 @@
           <tr>
             <td><code>{{ r['email'] }}</code></td>
             <td><code style="font-size:12px;">{{ r['token'] }}</code></td>
-            <td>{{ r['opened_at'] or '' }}</td>
+            <td>{{ (r['opened_at']|edt) if r['opened_at'] else '' }}</td>
             <td><code style="font-size:12px;">{{ r['questionnaire_hash'] or '' }}</code></td>
           </tr>
         {% endfor %}
@@ -124,9 +124,9 @@
           <tr>
             <td><code>{{ r['email'] }}</code></td>
             <td><code style="font-size:12px;">{{ r['token'] }}</code></td>
-            <td>{{ r['opened_at'] or '' }}</td>
+            <td>{{ (r['opened_at']|edt) if r['opened_at'] else '' }}</td>
             <td><code style="font-size:12px;">{{ r['questionnaire_hash'] or '' }}</code></td>
-            <td>{{ r['submitted_at'] or '' }}</td>
+            <td>{{ (r['submitted_at']|edt) if r['submitted_at'] else '' }}</td>
           </tr>
         {% endfor %}
       </tbody>

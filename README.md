@@ -85,6 +85,17 @@ The local simulated respondent page (`/s/<token>`) renders an HTML form and post
 - Master view includes campaign-level counts and tables.
 - Results page: `/campaigns/<campaign_key>/results` shows aggregated `singleSelect` counts and recent `freeText` answers.
 
+## Admin mode: Local vs Cloud (global toggle)
+
+The local Admin UI supports **two global modes** (toggle on the home screen):
+
+- **Local mode**: end-to-end local operation (local `/s/<token>` links, local submissions).
+- **Cloud mode**: production-like delivery. Campaigns are pushed to Cloudflare for respondent delivery, and submissions are **synced back into local SQLite** so analysis/exports still run locally.
+
+You can set the default at startup with:
+
+- `ADMIN_MODE_DEFAULT=local|cloud` (optional; the UI selection is persisted in SQLite and overrides the default)
+
 ## Next steps (Cloudflare + Resend)
 
 From the project plan (`.cursor/plans/qgen-local-admin.plan.md`), the next parallel steps to take once local authoring is stable:
@@ -94,7 +105,10 @@ From the project plan (`.cursor/plans/qgen-local-admin.plan.md`), the next paral
 
 ## Cloudflare (staging, v0.5)
 
-We ship a minimal cloud slice for v0.5: **respondent + API only** (no cloud Admin UI yet). You continue to use the local Admin app to generate a bulk invitations JSON payload, then upload it to Cloudflare which returns per-email tokens.
+We ship a minimal cloud slice for v0.5: **respondent + API only** (no cloud Admin UI yet).
+
+- Respondents submit on Cloudflare.
+- In **Cloud mode**, the local Admin app will **sync submissions down into local SQLite** (auto on Master/Results with a short TTL, plus a manual “Sync from Cloudflare now” button) so downstream analysis and exports can stay local.
 
 - **Docs**: [`cloudflare/pages/PROVISIONING.md`](cloudflare/pages/PROVISIONING.md)
 - **Respondent**:
@@ -119,6 +133,11 @@ Then open the campaign **Master view** and use **“Push to Cloudflare (generate
 - POST to `${CLOUDFLARE_STUDY_BASE_URL}/api/admin/upload`
 - Store the returned `{email, token}` mapping locally
 - Show the tokens in the campaign Master view, and provide CSV exports
+
+In **Cloud mode**, Master view also provides:
+
+- **“Sync from Cloudflare now”**: fetches `GET ${CLOUDFLARE_STUDY_BASE_URL}/api/admin/export/<campaignKey>` and upserts submissions into the local SQLite DB.
+- Auto-sync on Master/Results (TTL-based) so local counts typically stay current during analysis.
 
 Note: your staging may have an additional Cloudflare WAF rule (IP allow-list) for `/api/admin/*`, so pushing will only work from an allowed IP. If you are blocked unexpectedly, check whether your machine is using IPv6 (it can change frequently).
 
