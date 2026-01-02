@@ -31,10 +31,8 @@ def _html_to_plain_text(html: str) -> str:
     # Convert <a href="URL">text</a> to "text (URL)" so URLs are visible in plain text
     # Handle both single and double quotes, and triple-brace variables in href
     def replace_anchor(m: re.Match) -> str:
-        url = m.group(1) or m.group(2) or ""
-        link_text = m.group(3) or ""
-        link_text = link_text.strip()
-        url = url.strip()
+        url = (m.group(1) or "").strip()
+        link_text = (m.group(2) or "").strip()
         
         # If the link text IS the URL (or a variable that likely contains it), just show it once
         if link_text == url or not link_text:
