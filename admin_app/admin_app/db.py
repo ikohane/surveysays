@@ -193,6 +193,18 @@ CREATE TABLE IF NOT EXISTS event_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_event_log_campaign_id ON event_log(campaign_id);
+
+CREATE TABLE IF NOT EXISTS campaign_recipient_exclusions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaign_id INTEGER NOT NULL,
+  email TEXT NOT NULL,
+  excluded_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+  UNIQUE (campaign_id, email),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_campaign_recipient_exclusions_campaign_id ON campaign_recipient_exclusions(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_campaign_recipient_exclusions_email ON campaign_recipient_exclusions(email);
 """
 
 
@@ -216,6 +228,7 @@ class Db:
             _ensure_question_stats_columns(conn)
             _ensure_submission_tables(conn)
             _ensure_cloud_tables(conn)
+            _ensure_exclusions_table(conn)
 
 
 def _try_add_column(conn: sqlite3.Connection, table: str, column_def: str) -> None:
@@ -515,6 +528,23 @@ def _ensure_cloud_tables(conn: sqlite3.Connection) -> None:
                 str(r["uploaded_at"]),
             ),
         )
+
+
+def _ensure_exclusions_table(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        f"""
+        CREATE TABLE IF NOT EXISTS campaign_recipient_exclusions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL,
+          email TEXT NOT NULL,
+          excluded_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+          UNIQUE (campaign_id, email),
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_campaign_recipient_exclusions_campaign_id ON campaign_recipient_exclusions(campaign_id);
+        CREATE INDEX IF NOT EXISTS idx_campaign_recipient_exclusions_email ON campaign_recipient_exclusions(email);
+        """
+    )
 
 
 def _ensure_submission_tables(conn: sqlite3.Connection) -> None:
@@ -1578,5 +1608,186 @@ def list_free_text_answers(conn: sqlite3.Connection, *, campaign_id: int, limit:
             (campaign_id, limit),
         ).fetchall()
     )
+
+
+# -----------------------------
+# Campaign Recipient Exclusions
+# -----------------------------
+
+
+def list_pending_recipients_for_campaign(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+) -> list[sqlite3.Row]:
+    """
+    List recipients who are:
+    - Have an invitation for THIS campaign (variants were generated)
+    - NOT excluded from this campaign
+    - NOT yet submitted for this campaign (no submission exists)
+    
+    Returns recipient info including first/last name from strata_json.
+    Only shows recipients that belong to this campaign (have invitations).
+    """
+    return list(
+        conn.execute(
+            """
+            SELECT
+              r.email,
+              r.strata_json,
+              i.token,
+              i.opened_at,
+              i.questionnaire_hash,
+              CASE WHEN s.token IS NOT NULL THEN 1 ELSE 0 END AS has_submitted
+            FROM invitations i
+            INNER JOIN recipients r
+              ON r.email = i.email
+            LEFT JOIN submissions s
+              ON s.campaign_id = i.campaign_id AND s.token = i.token
+            WHERE i.campaign_id = ?
+              AND i.email NOT IN (
+                SELECT email FROM campaign_recipient_exclusions WHERE campaign_id = ?
+              )
+              AND s.token IS NULL  -- not submitted
+            ORDER BY r.email
+            """,
+            (campaign_id, campaign_id),
+        ).fetchall()
+    )
+
+
+def list_excluded_recipients_for_campaign(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+) -> list[sqlite3.Row]:
+    """
+    List recipients who are excluded from this campaign.
+    """
+    return list(
+        conn.execute(
+            """
+            SELECT
+              e.email,
+              e.excluded_at,
+              r.strata_json
+            FROM campaign_recipient_exclusions e
+            LEFT JOIN recipients r ON r.email = e.email
+            WHERE e.campaign_id = ?
+            ORDER BY e.email
+            """,
+            (campaign_id,),
+        ).fetchall()
+    )
+
+
+def exclude_recipient_from_campaign(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    email: str,
+) -> bool:
+    """
+    Exclude a recipient from a campaign. Also removes any existing invitation for this campaign.
+    Returns True if exclusion was added, False if already excluded.
+    """
+    # Check if already excluded
+    existing = conn.execute(
+        "SELECT 1 FROM campaign_recipient_exclusions WHERE campaign_id = ? AND email = ?",
+        (campaign_id, email),
+    ).fetchone()
+    if existing:
+        return False
+    
+    # Add exclusion
+    conn.execute(
+        """
+        INSERT INTO campaign_recipient_exclusions (campaign_id, email)
+        VALUES (?, ?)
+        """,
+        (campaign_id, email),
+    )
+    
+    # Remove any existing invitation for this campaign (before it's sent)
+    # Only remove if there's no submission yet
+    conn.execute(
+        """
+        DELETE FROM invitations
+        WHERE campaign_id = ? AND email = ?
+          AND token NOT IN (SELECT token FROM submissions WHERE campaign_id = ?)
+        """,
+        (campaign_id, email, campaign_id),
+    )
+    
+    # Also remove from invitation_variants
+    conn.execute(
+        """
+        DELETE FROM invitation_variants
+        WHERE campaign_id = ? AND email = ?
+        """,
+        (campaign_id, email),
+    )
+    
+    return True
+
+
+def restore_recipient_to_campaign(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    email: str,
+) -> bool:
+    """
+    Remove exclusion for a recipient from a campaign.
+    Returns True if exclusion was removed, False if wasn't excluded.
+    """
+    cur = conn.execute(
+        "DELETE FROM campaign_recipient_exclusions WHERE campaign_id = ? AND email = ?",
+        (campaign_id, email),
+    )
+    return cur.rowcount > 0
+
+
+def count_pending_recipients(conn: sqlite3.Connection, *, campaign_id: int) -> dict[str, int]:
+    """
+    Count recipients by status for this campaign.
+    Only counts recipients that have invitations for this campaign.
+    """
+    row = conn.execute(
+        """
+        SELECT
+          -- Total recipients for this campaign (have invitations)
+          (SELECT COUNT(*) FROM invitations WHERE campaign_id = ?) AS total_recipients,
+          -- Excluded from this campaign
+          (SELECT COUNT(*) FROM campaign_recipient_exclusions WHERE campaign_id = ?) AS excluded,
+          -- Pending: have invitation, not excluded, not submitted
+          (SELECT COUNT(*) 
+           FROM invitations i
+           LEFT JOIN submissions s ON s.campaign_id = i.campaign_id AND s.token = i.token
+           WHERE i.campaign_id = ?
+             AND i.email NOT IN (
+               SELECT email FROM campaign_recipient_exclusions WHERE campaign_id = ?
+             )
+             AND s.token IS NULL
+          ) AS pending,
+          -- Submitted: have invitation and submission
+          (SELECT COUNT(*)
+           FROM invitations i
+           JOIN submissions s ON s.campaign_id = i.campaign_id AND s.token = i.token
+           WHERE i.campaign_id = ?
+             AND i.email NOT IN (
+               SELECT email FROM campaign_recipient_exclusions WHERE campaign_id = ?
+             )
+          ) AS submitted
+        """,
+        (campaign_id, campaign_id, campaign_id, campaign_id, campaign_id, campaign_id),
+    ).fetchone()
+    assert row is not None
+    return {
+        "total_recipients": int(row["total_recipients"]),
+        "excluded": int(row["excluded"]),
+        "pending": int(row["pending"]),
+        "submitted": int(row["submitted"]),
+    }
 
 

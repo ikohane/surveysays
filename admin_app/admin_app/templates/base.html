@@ -11,18 +11,21 @@
       main { max-width: 980px; margin: 18px auto; padding: 0 18px; }
       .card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
       .row { display: flex; gap: 12px; flex-wrap: wrap; }
-      .row > * { flex: 1; min-width: 260px; }
+      .row > * { flex: 1; min-width: 180px; }
       label { display: block; font-size: 13px; color: #374151; margin-bottom: 6px; }
       input[type="text"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; }
       select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; }
       input[type="file"] { width: 100%; }
       button { padding: 10px 12px; border: 0; border-radius: 8px; background: #2563eb; color: white; font-weight: 600; cursor: pointer; }
       button.secondary { background: #374151; }
+      button.danger-btn { background: #dc2626; }
+      button.danger-btn:hover { background: #b91c1c; }
       button:disabled { background: #9ca3af; cursor: not-allowed; }
       .muted { color: #6b7280; font-size: 13px; }
       .flash { padding: 10px 12px; border-radius: 8px; margin-bottom: 10px; }
       .flash.error { background: #fee2e2; border: 1px solid #fecaca; color: #7f1d1d; }
       .flash.success { background: #dcfce7; border: 1px solid #bbf7d0; color: #14532d; }
+      .flash.warning { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; }
       table { width: 100%; border-collapse: collapse; }
       th, td { text-align: left; border-bottom: 1px solid #e5e7eb; padding: 10px 8px; font-size: 14px; }
       /* Code styling: readable colors + padding, with square corners (no rounded edges). */

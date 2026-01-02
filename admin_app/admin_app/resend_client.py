@@ -1,13 +1,84 @@
 from __future__ import annotations
 
 import certifi
+import html as html_module
 import json
 import os
+import re
 import time
 import ssl
 import urllib.error
 import urllib.request
 from typing import Any
+
+
+def _html_to_plain_text(html: str) -> str:
+    """
+    Convert HTML to plain text for multipart email fallback.
+    
+    Key behaviors:
+    - Preserves URLs from <a href="..."> tags by showing: "link text (URL)"
+    - Converts <br>, <br/>, </p>, </div> to newlines
+    - Strips all other HTML tags
+    - Decodes HTML entities
+    - Preserves triple-brace variables like {{{SURVEY_LINK}}}
+    """
+    if not html:
+        return ""
+    
+    text = html
+    
+    # Convert <a href="URL">text</a> to "text (URL)" so URLs are visible in plain text
+    # Handle both single and double quotes, and triple-brace variables in href
+    def replace_anchor(m: re.Match) -> str:
+        url = m.group(1) or m.group(2) or ""
+        link_text = m.group(3) or ""
+        link_text = link_text.strip()
+        url = url.strip()
+        
+        # If the link text IS the URL (or a variable that likely contains it), just show it once
+        if link_text == url or not link_text:
+            return url
+        # If link text looks like it might be the same variable, don't duplicate
+        if link_text.startswith("{{{") and url.startswith("{{{"):
+            return url
+        return f"{link_text} ({url})"
+    
+    # Match <a href="...">...</a> or <a href='...'>...</a>
+    text = re.sub(
+        r'<a\s+[^>]*href=["\']([^"\']*)["\'][^>]*>(.*?)</a>',
+        replace_anchor,
+        text,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    # Also handle href with triple braces that might not be quoted properly
+    text = re.sub(
+        r'<a\s+[^>]*href=(\{{{[^}]+}}})[^>]*>(.*?)</a>',
+        replace_anchor,
+        text,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    
+    # Convert block-level breaks to newlines
+    text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'</p>', '\n\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'</div>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'</li>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<li[^>]*>', '• ', text, flags=re.IGNORECASE)
+    
+    # Strip all remaining HTML tags
+    text = re.sub(r'<[^>]+>', '', text)
+    
+    # Decode HTML entities
+    text = html_module.unescape(text)
+    
+    # Normalize whitespace: collapse multiple spaces, preserve paragraph breaks
+    text = re.sub(r'[ \t]+', ' ', text)
+    text = re.sub(r'\n[ \t]+', '\n', text)
+    text = re.sub(r'[ \t]+\n', '\n', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    
+    return text.strip()
 
 
 class ResendError(RuntimeError):
@@ -18,7 +89,6 @@ class ResendError(RuntimeError):
 
 
 RESEND_API_BASE = "https://api.resend.com"
-FORCED_TEST_TO_EMAIL = "r1@study.hvp.global"
 
 
 def _require_api_key() -> str:
@@ -51,15 +121,20 @@ def _request_json(*, method: str, path: str, body: dict[str, Any] | None) -> dic
         raise ResendError(f"Resend API connection error: {e}") from e
 
 
-def create_template(*, name: str, from_email: str, subject: str, html: str, variables: list[dict[str, Any]]) -> str:
+def create_template(*, name: str, from_email: str, subject: str, html: str, text: str | None = None, variables: list[dict[str, Any]]) -> str:
     """
     Returns created template id.
+    
+    If `text` is not provided, auto-generates a plain text version from `html`
+    that preserves URLs from anchor tags for text-only email clients.
     """
+    plain_text = text if text is not None else _html_to_plain_text(html)
     payload = {
         "name": name,
         "from": from_email,
         "subject": subject,
         "html": html,
+        "text": plain_text,
         "variables": variables,
     }
     resp = _request_json(method="POST", path="/templates", body=payload)
@@ -69,15 +144,20 @@ def create_template(*, name: str, from_email: str, subject: str, html: str, vari
     return template_id
 
 
-def update_template(*, template_id: str, name: str, from_email: str, subject: str, html: str, variables: list[dict[str, Any]]) -> None:
+def update_template(*, template_id: str, name: str, from_email: str, subject: str, html: str, text: str | None = None, variables: list[dict[str, Any]]) -> None:
     """
     Best-effort update. Resend supports updating templates; endpoint shape may vary by account version.
+    
+    If `text` is not provided, auto-generates a plain text version from `html`
+    that preserves URLs from anchor tags for text-only email clients.
     """
+    plain_text = text if text is not None else _html_to_plain_text(html)
     payload = {
         "name": name,
         "from": from_email,
         "subject": subject,
         "html": html,
+        "text": plain_text,
         "variables": variables,
     }
     # Try PATCH then PUT as fallback.
@@ -121,7 +201,18 @@ def publish_template(*, template_id: str) -> None:
     )
 
 
-def create_or_update_campaign_template(*, campaign_key: str, template_id: str | None, from_email: str, subject: str, html: str) -> str:
+def create_or_update_campaign_template(*, campaign_key: str, template_id: str | None, from_email: str, subject: str, html: str, text: str | None = None) -> str:
+    """
+    Create or update a Resend template for a campaign.
+    
+    The template is created with both HTML and plain text versions.
+    If `text` is not provided, a plain text version is auto-generated from HTML
+    that preserves URLs from anchor tags for text-only email clients.
+    
+    This ensures hyperlinks work properly in both:
+    - HTML-capable clients: clickable <a> links
+    - Text-only clients: readable URLs extracted from href attributes
+    """
     variables = [
         {"key": "SURVEY_LINK", "type": "string", "fallbackValue": "http://127.0.0.1:5055/"},
         {"key": "CAMPAIGN_TITLE", "type": "string", "fallbackValue": campaign_key},
@@ -132,13 +223,13 @@ def create_or_update_campaign_template(*, campaign_key: str, template_id: str | 
     name = f"{campaign_key}"
     if template_id:
         try:
-            update_template(template_id=template_id, name=name, from_email=from_email, subject=subject, html=html, variables=variables)
+            update_template(template_id=template_id, name=name, from_email=from_email, subject=subject, html=html, text=text, variables=variables)
             publish_template(template_id=template_id)
             return template_id
         except ResendError:
             # If update fails (e.g. template missing), create a new one.
             pass
-    new_id = create_template(name=name, from_email=from_email, subject=subject, html=html, variables=variables)
+    new_id = create_template(name=name, from_email=from_email, subject=subject, html=html, text=text, variables=variables)
     publish_template(template_id=new_id)
     return new_id
 
@@ -163,8 +254,7 @@ def send_invites_for_campaign(
     max_per_second: float = 0.8,
 ) -> list[dict[str, Any]]:
     """
-    Safety gate: all messages are forced to FORCED_TEST_TO_EMAIL.
-    Intended recipient email is passed via RECIPIENT_EMAIL variable.
+    Send invitation emails to recipients using a Resend template.
     """
     results: list[dict[str, Any]] = []
     min_interval = 1.0 / max(max_per_second, 0.1)
@@ -186,7 +276,7 @@ def send_invites_for_campaign(
             attempt += 1
             try:
                 resp = send_email_with_template(
-                    to_email=FORCED_TEST_TO_EMAIL,
+                    to_email=intended_email,
                     template_id=template_id,
                     variables={
                         "SURVEY_LINK": survey_link,

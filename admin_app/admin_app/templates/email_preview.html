@@ -4,7 +4,7 @@
     <div class="actions" style="justify-content: space-between;">
       <div>
         <h2 style="margin: 0;">Email preview (dry-run)</h2>
-        <div class="muted">Campaign: {{ campaign['campaign_key'] }} · Mode: <strong>{{ admin_mode }}</strong> · Safety: forced delivery to <code>r1@study.hvp.global</code></div>
+        <div class="muted">Campaign: {{ campaign['campaign_key'] }} · Mode: <strong>{{ admin_mode }}</strong></div>
       </div>
       <div class="actions">
         <a href="{{ url_for('master_view', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Back</button></a>
@@ -21,27 +21,34 @@
 
   <div class="card">
     <h3 style="margin-top:0;">Per-invite render</h3>
-    <div class="muted">Shows intended recipient, token link, and rendered HTML body (variables substituted).</div>
+    <div class="muted">Shows intended recipient, token link, and rendered email body in both HTML and auto-generated plain text versions.</div>
+    <div class="muted" style="margin-top: 6px;">
+      <strong>Plain text version:</strong> Auto-generated from HTML. URLs are extracted from <code>&lt;a href="..."&gt;</code> tags to ensure they are visible in text-only email clients.
+    </div>
     <div style="height: 10px;"></div>
-    <div style="max-height: 520px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
+    <div style="max-height: 620px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
       <table>
         <thead>
           <tr>
-            <th>Intended email</th>
-            <th>Forced to</th>
+            <th>Recipient email</th>
             <th>Survey link</th>
-            <th>Rendered body</th>
+            <th>HTML version</th>
+            <th>Plain text version</th>
           </tr>
         </thead>
         <tbody>
           {% for p in previews %}
             <tr>
               <td><code>{{ p['intended_email'] }}</code></td>
-              <td><code>{{ p['forced_to'] }}</code></td>
               <td><code style="font-size:12px;">{{ p['survey_link'] }}</code></td>
               <td>
-                <div style="max-width: 520px;">
-                  <pre style="white-space: pre-wrap;">{{ p['rendered_html'] }}</pre>
+                <div style="max-width: 400px;">
+                  <pre style="white-space: pre-wrap; font-size: 12px; background: #f9fafb; padding: 8px; border-radius: 6px;">{{ p['rendered_html'] }}</pre>
+                </div>
+              </td>
+              <td>
+                <div style="max-width: 400px;">
+                  <pre style="white-space: pre-wrap; font-size: 12px; background: #fffbeb; padding: 8px; border-radius: 6px; border: 1px solid #fcd34d;">{{ p['rendered_text'] }}</pre>
                 </div>
               </td>
             </tr>

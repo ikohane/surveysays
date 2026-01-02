@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <div class="actions" style="justify-content: space-between;">
+      <div>
+        <h2 style="margin: 0;">Manage Recipients</h2>
+        <div class="muted">Campaign: {{ campaign['campaign_key'] }} · Click on a recipient to exclude them from this campaign</div>
+      </div>
+      <div class="actions">
+        <a href="{{ url_for('master_view', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Back to Master</button></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Summary</h3>
+    <div class="row">
+      <div class="card" style="margin:0;">
+        <div><span class="pill">Total Recipients</span></div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ counts.total_recipients }}</div>
+      </div>
+      <div class="card" style="margin:0;">
+        <div><span class="pill">Pending (not excluded)</span></div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">{{ counts.pending }}</div>
+      </div>
+      <div class="card" style="margin:0;">
+        <div><span class="pill">Excluded</span></div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 6px; color: #b91c1c;">{{ counts.excluded }}</div>
+      </div>
+      <div class="card" style="margin:0;">
+        <div><span class="pill">Submitted</span></div>
+        <div style="font-size: 28px; font-weight: 700; margin-top: 6px; color: #0f8f3a;">{{ counts.submitted }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Pending Recipients (not yet submitted)</h3>
+    <div class="muted">These recipients will receive invitations. Click the ✕ button to exclude a recipient from this campaign.</div>
+    <div style="height: 10px;"></div>
+    {% if counts.total_recipients == 0 %}
+      <div class="muted" style="background: #fef3c7; padding: 12px; border-radius: 8px; color: #92400e;">
+        <strong>No recipients for this campaign yet.</strong><br>
+        Recipients appear here after you <strong>Generate variants</strong> on the Campaign page. 
+        This associates the current global recipients with this campaign.
+      </div>
+    {% elif not_sent|length == 0 %}
+      <div class="muted">No pending recipients. All have either submitted or been excluded.</div>
+    {% else %}
+      <div style="max-height: 400px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px;"></th>
+              <th>Email</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Token Created</th>
+              <th>Opened</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in not_sent %}
+              <tr>
+                <td>
+                  <form action="{{ url_for('exclude_recipient', campaign_key=campaign['campaign_key']) }}" method="post" style="margin: 0;">
+                    <input type="hidden" name="email" value="{{ r.email }}" />
+                    <button type="submit" class="danger-btn" style="padding: 4px 8px; font-size: 12px; min-width: 0;" title="Exclude {{ r.email }}">✕</button>
+                  </form>
+                </td>
+                <td><code>{{ r.email }}</code></td>
+                <td>{{ r.firstname or '' }}</td>
+                <td>{{ r.lastname or '' }}</td>
+                <td>{% if r.token %}<span style="color: #0f8f3a;">✓</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+                <td>{% if r.opened_at %}<span style="color: #0f8f3a;">✓</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="muted" style="margin-top: 8px;">Showing {{ not_sent|length }} pending recipient(s)</div>
+    {% endif %}
+  </div>
+
+  {% if submitted|length > 0 %}
+  <div class="card">
+    <h3 style="margin-top:0;">Already Submitted</h3>
+    <div class="muted">These recipients have completed their surveys and cannot be excluded.</div>
+    <div style="height: 10px;"></div>
+    <div style="max-height: 300px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in submitted %}
+            <tr>
+              <td><code>{{ r.email }}</code></td>
+              <td>{{ r.firstname or '' }}</td>
+              <td>{{ r.lastname or '' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="muted" style="margin-top: 8px;">{{ submitted|length }} submitted</div>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h3 style="margin-top:0;">Excluded Recipients</h3>
+    <div class="muted">These recipients have been excluded from this campaign. Click the ↩ button to restore them.</div>
+    <div style="height: 10px;"></div>
+    {% if excluded|length == 0 %}
+      <div class="muted">No excluded recipients for this campaign.</div>
+    {% else %}
+      <div style="max-height: 300px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px;"></th>
+              <th>Email</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Excluded At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in excluded %}
+              <tr style="background: #fef2f2;">
+                <td>
+                  <form action="{{ url_for('restore_recipient', campaign_key=campaign['campaign_key']) }}" method="post" style="margin: 0;">
+                    <input type="hidden" name="email" value="{{ r.email }}" />
+                    <button type="submit" class="secondary" style="padding: 4px 8px; font-size: 12px; min-width: 0;" title="Restore {{ r.email }}">↩</button>
+                  </form>
+                </td>
+                <td><code>{{ r.email }}</code></td>
+                <td>{{ r.firstname or '' }}</td>
+                <td>{{ r.lastname or '' }}</td>
+                <td>{{ r.excluded_at|edt }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="muted" style="margin-top: 8px;">{{ excluded|length }} excluded</div>
+    {% endif %}
+  </div>
+{% endblock %}
+

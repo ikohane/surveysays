@@ -25,7 +25,9 @@ from .db import (
     Db,
     clear_variants_for_campaign,
     clear_question_bank,
+    count_pending_recipients,
     create_invitations_for_campaign,
+    exclude_recipient_from_campaign,
     get_campaign_by_key,
     get_cloud_last_synced_at,
     get_setting,
@@ -39,8 +41,10 @@ from .db import (
     insert_variants,
     list_campaigns,
     list_assignments_for_token,
+    list_excluded_recipients_for_campaign,
     list_invitations_for_campaign,
     list_invitation_ledger_rows,
+    list_pending_recipients_for_campaign,
     list_recent_submissions,
     list_cloud_recent_submissions,
     list_question_items_with_stats,
@@ -51,6 +55,7 @@ from .db import (
     mark_invitation_opened,
     populate_invitations_from_variants,
     report_rows,
+    restore_recipient_to_campaign,
     save_invitation_snapshot,
     single_select_choice_counts,
     insert_assignment,
@@ -77,7 +82,7 @@ from .db import (
     DEFAULT_LAYOUT_YAML,
 )
 
-from .resend_client import ResendError, create_or_update_campaign_template, send_invites_for_campaign
+from .resend_client import ResendError, create_or_update_campaign_template, send_invites_for_campaign, _html_to_plain_text
 
 
 def _admin_mode_from_conn(conn: sqlite3.Connection) -> str:
@@ -1318,6 +1323,7 @@ def create_app() -> Flask:
 
             # Compute local counts AFTER possible sync.
             cohort_counts = submission_cohort_counts(conn, campaign_id=campaign_id)
+            recipient_counts = count_pending_recipients(conn, campaign_id=campaign_id)
             if admin_mode == "cloud" and cloud_base_url and campaign["picker_strategy"] != "online_assign":
                 recent_submissions = list_cloud_recent_submissions(
                     conn, campaign_id=campaign_id, cloud_base_url=cloud_base_url, limit=20
@@ -1343,6 +1349,7 @@ def create_app() -> Flask:
             variants_counts=variants_counts,
             inv_counts=inv_counts,
             cohort_counts=cohort_counts,
+            recipient_counts=recipient_counts,
             recent_submissions=recent_submissions,
             ledger_rows=ledger_rows,
             cloud_base_url=cloud_base_url,
@@ -1591,7 +1598,6 @@ def create_app() -> Flask:
     def send_emails(campaign_key: str) -> Response:
         """
         Sends invitation emails for both online_assign and offline campaigns using a per-campaign Resend template.
-        HARD SAFETY: all outbound emails are forced to r1@study.hvp.global (see resend_client.FORCED_TEST_TO_EMAIL).
         """
         with db.connect() as conn:
             campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
@@ -1603,6 +1609,15 @@ def create_app() -> Flask:
             inv_rows = list_invitations_for_campaign(conn, campaign_id=int(campaign["id"]))
             if not inv_rows:
                 flash("No invitations yet. Click Generate/Prepare first.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+
+            # Filter out excluded recipients
+            excluded_emails = set(
+                str(r["email"]) for r in list_excluded_recipients_for_campaign(conn, campaign_id=int(campaign["id"]))
+            )
+            inv_rows = [r for r in inv_rows if str(r["email"]) not in excluded_emails]
+            if not inv_rows:
+                flash("All recipients have been excluded from this campaign.", "error")
                 return redirect(url_for("master_view", campaign_key=campaign_key))
 
             # Offline campaigns require snapshot to be present for tokenized links
@@ -1765,7 +1780,7 @@ def create_app() -> Flask:
                 )
                 log_conn.commit()
 
-        # Send outside transaction (still safe; recipients are forced to r1@study.hvp.global)
+        # Send outside transaction
         try:
             sends = send_invites_for_campaign(
                 template_id=template_id,
@@ -1786,7 +1801,7 @@ def create_app() -> Flask:
             flash(f"Resend send error: {e}", "error")
             return redirect(url_for("master_view", campaign_key=campaign_key))
 
-        flash(f"Sent {len(sends)} emails (forced delivery to r1@study.hvp.global).", "success")
+        flash(f"Sent {len(sends)} invitation emails.", "success")
         _log_send_result(success=True, message=f"Sent {len(sends)} messages")
         return redirect(url_for("master_view", campaign_key=campaign_key))
 
@@ -1804,6 +1819,15 @@ def create_app() -> Flask:
             inv_rows = list_invitations_for_campaign(conn, campaign_id=int(campaign["id"]))
             if not inv_rows:
                 flash("No invitations yet. Click Generate/Prepare first.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+
+            # Filter out excluded recipients
+            excluded_emails = set(
+                str(r["email"]) for r in list_excluded_recipients_for_campaign(conn, campaign_id=int(campaign["id"]))
+            )
+            inv_rows = [r for r in inv_rows if str(r["email"]) not in excluded_emails]
+            if not inv_rows:
+                flash("All recipients have been excluded from this campaign.", "error")
                 return redirect(url_for("master_view", campaign_key=campaign_key))
 
             email_from = (campaign["email_from"] or "").strip()
@@ -1864,13 +1888,16 @@ def create_app() -> Flask:
                     "RECIPIENT_FIRST_NAME": nm.get("firstname", ""),
                     "RECIPIENT_LAST_NAME": nm.get("lastname", ""),
                 }
+                rendered_html = _render_email_preview(html=email_html, variables=variables)
+                # Generate plain text version for preview (same logic used when sending)
+                rendered_text = _html_to_plain_text(rendered_html)
                 previews.append(
                     {
                         "intended_email": intended_email,
-                        "forced_to": "r1@study.hvp.global",
                         "token": token,
                         "survey_link": link,
-                        "rendered_html": _render_email_preview(html=email_html, variables=variables),
+                        "rendered_html": rendered_html,
+                        "rendered_text": rendered_text,
                     }
                 )
 
@@ -1882,6 +1909,121 @@ def create_app() -> Flask:
             email_subject=email_subject,
             previews=previews,
         )
+
+    @app.get("/campaigns/<campaign_key>/recipients")
+    def campaign_recipients(campaign_key: str) -> str:
+        """
+        View and manage recipients for this campaign.
+        Shows pending recipients (not excluded, not yet submitted) and allows exclusion.
+        """
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            
+            pending = list_pending_recipients_for_campaign(conn, campaign_id=int(campaign["id"]))
+            excluded = list_excluded_recipients_for_campaign(conn, campaign_id=int(campaign["id"]))
+            counts = count_pending_recipients(conn, campaign_id=int(campaign["id"]))
+            
+            # Parse strata_json for display
+            def parse_recipient(row: sqlite3.Row) -> dict[str, Any]:
+                strata = {}
+                try:
+                    strata = json.loads(row["strata_json"]) if row["strata_json"] else {}
+                except Exception:
+                    pass
+                row_keys = row.keys()
+                return {
+                    "email": row["email"],
+                    "firstname": strata.get("firstname", ""),
+                    "lastname": strata.get("lastname", ""),
+                    "token": row["token"] if "token" in row_keys else None,
+                    "opened_at": row["opened_at"] if "opened_at" in row_keys else None,
+                    "questionnaire_hash": row["questionnaire_hash"] if "questionnaire_hash" in row_keys else None,
+                    "has_submitted": bool(row["has_submitted"]) if "has_submitted" in row_keys else False,
+                }
+            
+            def parse_excluded(row: sqlite3.Row) -> dict[str, Any]:
+                strata = {}
+                try:
+                    strata = json.loads(row["strata_json"]) if row["strata_json"] else {}
+                except Exception:
+                    pass
+                return {
+                    "email": row["email"],
+                    "firstname": strata.get("firstname", ""),
+                    "lastname": strata.get("lastname", ""),
+                    "excluded_at": row["excluded_at"],
+                }
+            
+            pending_parsed = [parse_recipient(r) for r in pending]
+            excluded_parsed = [parse_excluded(r) for r in excluded]
+            
+            # Split pending into: not_sent (no submission) and submitted
+            not_sent = [r for r in pending_parsed if not r["has_submitted"]]
+            submitted = [r for r in pending_parsed if r["has_submitted"]]
+        
+        return render_template(
+            "recipients.html",
+            campaign=campaign,
+            not_sent=not_sent,
+            submitted=submitted,
+            excluded=excluded_parsed,
+            counts=counts,
+        )
+
+    @app.post("/campaigns/<campaign_key>/recipients/exclude")
+    def exclude_recipient(campaign_key: str) -> Response:
+        """
+        Exclude a recipient from this campaign.
+        """
+        email = (request.form.get("email") or "").strip().lower()
+        if not email:
+            flash("Email is required", "error")
+            return redirect(url_for("campaign_recipients", campaign_key=campaign_key))
+        
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            
+            added = exclude_recipient_from_campaign(conn, campaign_id=int(campaign["id"]), email=email)
+            if added:
+                _log_event(conn, campaign=campaign, event="exclude_recipient", success=True, message=f"Excluded {email}")
+                flash(f"Excluded {email} from this campaign", "success")
+            else:
+                flash(f"{email} was already excluded", "warning")
+            conn.commit()
+        
+        return redirect(url_for("campaign_recipients", campaign_key=campaign_key))
+
+    @app.post("/campaigns/<campaign_key>/recipients/restore")
+    def restore_recipient(campaign_key: str) -> Response:
+        """
+        Restore a previously excluded recipient to this campaign.
+        """
+        email = (request.form.get("email") or "").strip().lower()
+        if not email:
+            flash("Email is required", "error")
+            return redirect(url_for("campaign_recipients", campaign_key=campaign_key))
+        
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            
+            removed = restore_recipient_to_campaign(conn, campaign_id=int(campaign["id"]), email=email)
+            if removed:
+                _log_event(conn, campaign=campaign, event="restore_recipient", success=True, message=f"Restored {email}")
+                flash(f"Restored {email} to this campaign", "success")
+            else:
+                flash(f"{email} was not excluded", "warning")
+            conn.commit()
+        
+        return redirect(url_for("campaign_recipients", campaign_key=campaign_key))
 
     @app.get("/campaigns/<campaign_key>/export_invitations.json")
     def export_invitations_json(campaign_key: str) -> Response:
