@@ -84,6 +84,37 @@ The local simulated respondent page (`/s/<token>`) renders an HTML form and post
 
 - Master view includes campaign-level counts and tables.
 - Results page: `/campaigns/<campaign_key>/results` shows aggregated `singleSelect` counts and recent `freeText` answers.
+- **Submissions Detail**: `/campaigns/<campaign_key>/submissions` shows per-recipient answers. Access via the "View Individual Submissions" button on the Results page.
+
+## Recipient Management
+
+Each campaign has a **Recipients** page (`/campaigns/<campaign_key>/recipients`) accessible from the Master view navigation bar.
+
+**Features:**
+- View all recipients associated with this campaign (those with invitations generated)
+- **Exclude** recipients from a campaign (prevents email sending)
+- **Restore** previously excluded recipients
+- See submission status and token creation status per recipient
+
+**How it works:**
+- Recipients are added to a campaign when you **Generate variants**
+- Excluding a recipient removes their invitation and prevents email delivery
+- Exclusions are campaign-specific (the same recipient can be active in other campaigns)
+
+## Email Sending (Resend)
+
+The Admin app integrates with [Resend](https://resend.com) for sending invitation emails.
+
+**Setup:**
+- Set `RESEND_API_KEY` environment variable
+
+**Features:**
+- Emails are sent to actual recipient addresses
+- **Multipart emails**: Both HTML and plain text versions are sent for compatibility
+- Plain text version auto-generated from HTML (URLs extracted from `<a>` tags)
+- Template variables: `{{{SURVEY_LINK}}}`, `{{{CAMPAIGN_TITLE}}}`, `{{{RECIPIENT_EMAIL}}}`, `{{{RECIPIENT_FIRST_NAME}}}`, `{{{RECIPIENT_LAST_NAME}}}`
+
+**Email preview**: Use "Dry-run preview" to see rendered emails before sending.
 
 ## Admin mode: Local vs Cloud (global toggle)
 
