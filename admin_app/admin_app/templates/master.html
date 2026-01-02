@@ -303,6 +303,30 @@
   </div>
 
   <div class="card">
+    <h3 style="margin-top:0;">Email Settings (YAML)</h3>
+    <div class="muted">
+      Configure email template in YAML format. Changes here sync to the individual email fields below.
+    </div>
+    <div class="muted" style="margin-top: 6px;">
+      Allowed variables:
+      <code>{% raw %}{{{SURVEY_LINK}}}{% endraw %}</code>,
+      <code>{% raw %}{{{CAMPAIGN_TITLE}}}{% endraw %}</code>,
+      <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code>,
+      <code>{% raw %}{{{RECIPIENT_FIRST_NAME}}}{% endraw %}</code>,
+      <code>{% raw %}{{{RECIPIENT_LAST_NAME}}}{% endraw %}</code>
+    </div>
+    <div style="height: 10px;"></div>
+    <form action="{{ url_for('update_email_yaml', campaign_key=campaign['campaign_key']) }}" method="post">
+      <textarea name="email_yaml" style="width:100%; min-height: 280px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: monospace; font-size: 13px;">{{ email_yaml }}</textarea>
+      <div style="height: 10px;"></div>
+      <button class="secondary" type="submit">Save Email YAML</button>
+    </form>
+    <div class="muted" style="margin-top: 10px;">
+      Parsed config: from=<code>{{ email_config.from_email }}</code>, subject=<code>{{ email_config.subject }}</code>, base_url=<code>{{ email_config.base_url }}</code>
+    </div>
+  </div>
+
+  <div class="card">
     <h3 style="margin-top:0;">Invites ledger (all recipients)</h3>
     <div class="muted">Scrollable view of each invite with statuses: invited/opened/assigned/submitted.</div>
     <div style="height: 10px;"></div>

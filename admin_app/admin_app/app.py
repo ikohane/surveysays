@@ -80,6 +80,7 @@ from .db import (
     list_events,
     set_setting,
     update_campaign_layout_yaml,
+    update_campaign_email_yaml,
     DEFAULT_LAYOUT_YAML,
 )
 
@@ -197,6 +198,56 @@ def _normalize_layout_config(layout_yaml: str | None) -> dict[str, Any]:
             "selectedStyle": str(single.get("selected_style", "highlight") or "highlight"),
         },
     }
+
+
+# Default email template in YAML format
+DEFAULT_EMAIL_YAML = """\
+from: "Study Team <study@hvp.global>"
+subject: "You're invited to participate"
+base_url: "http://127.0.0.1:5055"
+html: |
+  <p>Dear {{{RECIPIENT_FIRST_NAME}}},</p>
+
+  <p>You are invited to participate in our study: <strong>{{{CAMPAIGN_TITLE}}}</strong>.</p>
+
+  <p><a href="{{{SURVEY_LINK}}}">Click here to begin the survey</a></p>
+
+  <p>Or copy and paste this link into your browser:<br/>
+  {{{SURVEY_LINK}}}</p>
+
+  <p>Thank you for your participation.</p>
+"""
+
+
+def _normalize_email_config(email_yaml: str | None) -> dict[str, Any]:
+    """
+    Parse email YAML and normalize to a stable config object.
+    Returns dict with keys: from_email, subject, base_url, html
+    """
+    obj = _parse_simple_yaml_to_obj(email_yaml or "")
+    if not obj:
+        obj = _parse_simple_yaml_to_obj(DEFAULT_EMAIL_YAML)
+    return {
+        "from_email": str(obj.get("from", "") or "").strip(),
+        "subject": str(obj.get("subject", "") or "").strip(),
+        "base_url": str(obj.get("base_url", "http://127.0.0.1:5055") or "http://127.0.0.1:5055").strip(),
+        "html": str(obj.get("html", "") or "").strip(),
+    }
+
+
+def _email_config_to_yaml(*, from_email: str, subject: str, base_url: str, html: str) -> str:
+    """
+    Serialize email config back to YAML format.
+    """
+    # Escape special characters in values for YAML
+    lines = []
+    lines.append(f'from: "{from_email}"')
+    lines.append(f'subject: "{subject}"')
+    lines.append(f'base_url: "{base_url}"')
+    lines.append("html: |")
+    for line in html.split("\n"):
+        lines.append(f"  {line}")
+    return "\n".join(lines)
 
 
 def _maybe_sync_cloud_submissions(
@@ -1385,12 +1436,26 @@ def create_app() -> Flask:
             else:
                 ledger_rows = list_invitation_ledger_rows(conn, campaign_id=campaign_id)
 
+        # Build email_yaml from individual fields if not set, for migration
+        existing_email_yaml = campaign["email_yaml"] if "email_yaml" in campaign.keys() else None
+        if not existing_email_yaml and (campaign["email_from"] or campaign["email_subject"] or campaign["email_html"]):
+            # Migrate from individual fields
+            existing_email_yaml = _email_config_to_yaml(
+                from_email=campaign["email_from"] or "",
+                subject=campaign["email_subject"] or "",
+                base_url=campaign["email_base_url"] or "http://127.0.0.1:5055",
+                html=campaign["email_html"] or "",
+            )
+        email_yaml_display = existing_email_yaml or DEFAULT_EMAIL_YAML
+
         return render_template(
             "master.html",
             campaign=campaign,
             admin_mode=admin_mode,
             layout_yaml=str(campaign["layout_yaml"] or DEFAULT_LAYOUT_YAML),
             layout_config=_normalize_layout_config(str(campaign["layout_yaml"] or DEFAULT_LAYOUT_YAML)),
+            email_yaml=email_yaml_display,
+            email_config=_normalize_email_config(email_yaml_display),
             cases_n=int(cases_n),
             recipients_n=int(recipients_n),
             templates_n=int(templates_n),
@@ -1455,6 +1520,36 @@ def create_app() -> Flask:
             update_campaign_layout_yaml(conn, campaign_key=campaign_key, layout_yaml=layout_yaml)
             conn.commit()
         flash("Saved layout YAML", "success")
+        return redirect(url_for("master_view", campaign_key=campaign_key))
+
+    @app.post("/campaigns/<campaign_key>/email-yaml")
+    def update_email_yaml(campaign_key: str) -> Response:
+        email_yaml = request.form.get("email_yaml") or ""
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            try:
+                config = _normalize_email_config(email_yaml)  # validate/normalize
+                if not config["from_email"] or not config["subject"] or not config["html"]:
+                    raise ValueError("from, subject, and html are required")
+            except Exception as e:
+                flash(f"Invalid email YAML: {e}", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+            update_campaign_email_yaml(conn, campaign_key=campaign_key, email_yaml=email_yaml)
+            # Also sync to individual columns for backwards compatibility
+            conn.execute(
+                """
+                UPDATE campaigns
+                SET email_from = ?, email_subject = ?, email_base_url = ?, email_html = ?
+                WHERE campaign_key = ?
+                """,
+                (config["from_email"], config["subject"], config["base_url"], config["html"], campaign_key),
+            )
+            _log_event(conn, campaign=campaign, event="update_email_yaml", success=True)
+            conn.commit()
+        flash("Saved email YAML (and synced to individual fields)", "success")
         return redirect(url_for("master_view", campaign_key=campaign_key))
 
     @app.post("/campaigns/<campaign_key>/cloud/push")
@@ -1628,6 +1723,7 @@ def create_app() -> Flask:
             if campaign is None:
                 flash("Campaign not found", "error")
                 return redirect(url_for("home"))
+            # Update individual fields
             conn.execute(
                 """
                 UPDATE campaigns
@@ -1636,10 +1732,18 @@ def create_app() -> Flask:
                 """,
                 (email_from, email_subject, email_base_url, email_html, campaign_key),
             )
+            # Also sync to YAML for consistency
+            email_yaml = _email_config_to_yaml(
+                from_email=email_from,
+                subject=email_subject,
+                base_url=email_base_url or "http://127.0.0.1:5055",
+                html=email_html,
+            )
+            update_campaign_email_yaml(conn, campaign_key=campaign_key, email_yaml=email_yaml)
             _log_event(conn, campaign=campaign, event="update_email_settings", success=True)
             conn.commit()
 
-        flash("Saved email settings", "success")
+        flash("Saved email settings (synced to YAML)", "success")
         return redirect(url_for("master_view", campaign_key=campaign_key))
 
     @app.post("/campaigns/<campaign_key>/send-emails")

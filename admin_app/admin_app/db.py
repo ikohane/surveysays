@@ -283,6 +283,7 @@ def _ensure_campaign_columns(conn: sqlite3.Connection) -> None:
     _try_add_column(conn, "campaigns", "email_html TEXT")
     _try_add_column(conn, "campaigns", "email_template_id TEXT")
     _try_add_column(conn, "campaigns", "email_base_url TEXT")
+    _try_add_column(conn, "campaigns", "email_yaml TEXT")
 
 
 DEFAULT_LAYOUT_YAML = """version: 1
@@ -624,6 +625,13 @@ def update_campaign_layout_yaml(conn: sqlite3.Connection, *, campaign_key: str, 
     conn.execute(
         "UPDATE campaigns SET layout_yaml = ? WHERE campaign_key = ?",
         (layout_yaml, campaign_key),
+    )
+
+
+def update_campaign_email_yaml(conn: sqlite3.Connection, *, campaign_key: str, email_yaml: str) -> None:
+    conn.execute(
+        "UPDATE campaigns SET email_yaml = ? WHERE campaign_key = ?",
+        (email_yaml, campaign_key),
     )
 
 
