@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <div class="actions" style="justify-content: space-between;">
+      <div>
+        <h2 style="margin: 0;">Submissions Detail</h2>
+        <div class="muted">Campaign: {{ campaign['campaign_key'] }} · {{ submissions|length }} submission(s)</div>
+      </div>
+      <div class="actions">
+        <a href="{{ url_for('results', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Back to Results</button></a>
+        <a href="{{ url_for('master_view', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Master</button></a>
+      </div>
+    </div>
+  </div>
+
+  {% if submissions|length == 0 %}
+  <div class="card">
+    <div class="muted">No submissions yet for this campaign.</div>
+  </div>
+  {% else %}
+  <div class="card">
+    <h3 style="margin-top:0;">Per-Recipient Answers</h3>
+    <div class="muted">Each row shows a recipient's individual responses to each question.</div>
+    <div style="height: 10px;"></div>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Name</th>
+            <th>Submitted At</th>
+            <th>Answers</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in submissions %}
+            <tr>
+              <td><code>{{ s.email }}</code></td>
+              <td>{{ s.firstname }} {{ s.lastname }}</td>
+              <td>{{ s.submitted_at|edt }}</td>
+              <td>
+                {% if s.answers %}
+                  <details>
+                    <summary style="cursor: pointer; color: #2563eb;">View {{ s.answers|length }} answer(s)</summary>
+                    <div style="margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 6px;">
+                      <table style="margin: 0; font-size: 13px;">
+                        <thead>
+                          <tr>
+                            <th style="padding: 4px 8px;">Question ID</th>
+                            <th style="padding: 4px 8px;">Answer</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for block_id, value in s.answers.items() %}
+                            <tr>
+                              <td style="padding: 4px 8px;"><code>{{ block_id }}</code></td>
+                              <td style="padding: 4px 8px; white-space: pre-wrap;">{{ value }}</td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  </details>
+                {% else %}
+                  <span class="muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Expanded View (All Answers)</h3>
+    <div class="muted">Full breakdown of each submission.</div>
+    <div style="height: 10px;"></div>
+    {% for s in submissions %}
+      <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong>{{ s.firstname }} {{ s.lastname }}</strong> (<code>{{ s.email }}</code>)
+          </div>
+          <div class="muted" style="font-size: 13px;">{{ s.submitted_at|edt }}</div>
+        </div>
+        {% if s.answers %}
+          <div style="margin-top: 10px;">
+            {% for block_id, value in s.answers.items() %}
+              <div style="margin-bottom: 6px; padding: 6px 10px; background: #f3f4f6; border-radius: 4px;">
+                <span style="font-weight: 600; color: #374151;">{{ block_id }}:</span>
+                <span style="margin-left: 8px;">{{ value }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="muted" style="margin-top: 8px;">No answers recorded.</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endblock %}
+

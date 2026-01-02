@@ -1610,6 +1610,34 @@ def list_free_text_answers(conn: sqlite3.Connection, *, campaign_id: int, limit:
     )
 
 
+def list_submissions_with_answers(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+) -> list[sqlite3.Row]:
+    """
+    List all submissions for a campaign with their full answers.
+    Returns email, token, submitted_at, answers_json, and recipient name from strata.
+    """
+    return list(
+        conn.execute(
+            """
+            SELECT
+              s.email,
+              s.token,
+              s.submitted_at,
+              s.answers_json,
+              r.strata_json
+            FROM submissions s
+            LEFT JOIN recipients r ON r.email = s.email
+            WHERE s.campaign_id = ?
+            ORDER BY s.submitted_at DESC
+            """,
+            (campaign_id,),
+        ).fetchall()
+    )
+
+
 # -----------------------------
 # Campaign Recipient Exclusions
 # -----------------------------

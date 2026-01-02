@@ -7,6 +7,7 @@
         <div class="muted">Campaign: {{ campaign['campaign_key'] }} · Submitted: {{ counts.submitted }} / {{ counts.invited }}</div>
       </div>
       <div class="actions">
+        <a href="{{ url_for('submissions_detail', campaign_key=campaign['campaign_key']) }}"><button type="button">View Individual Submissions</button></a>
         <a href="{{ url_for('master_view', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Back</button></a>
       </div>
     </div>

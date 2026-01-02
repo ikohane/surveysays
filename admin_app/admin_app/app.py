@@ -49,6 +49,7 @@ from .db import (
     list_cloud_recent_submissions,
     list_question_items_with_stats,
     list_free_text_answers,
+    list_submissions_with_answers,
     load_cases,
     load_recipients,
     load_templates,
@@ -1220,6 +1221,53 @@ def create_app() -> Flask:
             counts=counts,
             single_select_counts=ss_counts,
             free_text_answers=ft,
+        )
+
+    @app.get("/campaigns/<campaign_key>/submissions")
+    def submissions_detail(campaign_key: str) -> str:
+        """
+        Show detailed per-recipient submission data with their individual answers.
+        """
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            campaign_id = int(campaign["id"])
+            
+            submissions_raw = list_submissions_with_answers(conn, campaign_id=campaign_id)
+            
+            # Parse submissions to make them template-friendly
+            submissions = []
+            for row in submissions_raw:
+                strata = {}
+                try:
+                    strata = json.loads(row["strata_json"]) if row["strata_json"] else {}
+                except Exception:
+                    pass
+                
+                answers_parsed = {}
+                try:
+                    answers_obj = json.loads(row["answers_json"]) if row["answers_json"] else {}
+                    # answers_json structure: {"answers": {"block_id": "value", ...}}
+                    if isinstance(answers_obj, dict):
+                        answers_parsed = answers_obj.get("answers", answers_obj)
+                except Exception:
+                    pass
+                
+                submissions.append({
+                    "email": row["email"],
+                    "firstname": strata.get("firstname", ""),
+                    "lastname": strata.get("lastname", ""),
+                    "token": row["token"],
+                    "submitted_at": row["submitted_at"],
+                    "answers": answers_parsed,
+                })
+        
+        return render_template(
+            "submissions.html",
+            campaign=campaign,
+            submissions=submissions,
         )
 
     @app.get("/campaigns/<campaign_key>/invitations")
