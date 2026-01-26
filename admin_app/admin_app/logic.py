@@ -335,7 +335,11 @@ def assign_on_open(*, conn: sqlite3.Connection, campaign_row: sqlite3.Row, invit
 
     campaign_id = int(campaign_row["id"])
     token = str(invitation_row["token"])
-    k = int(campaign_row["k"]) if "k" in campaign_row else 1
+    # sqlite3.Row doesn't support 'in' operator reliably; access with default
+    try:
+        k = int(campaign_row["k"])
+    except (KeyError, IndexError):
+        k = 1
 
     existing = list_assignments_for_token(conn, campaign_id=campaign_id, token=token)
     chosen_item_ids: list[str]
