@@ -231,14 +231,6 @@ CREATE TABLE IF NOT EXISTS app_settings (
   value TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS cloud_sync_state (
-  campaign_id INTEGER NOT NULL,
-  cloud_base_url TEXT NOT NULL,
-  last_synced_at TIMESTAMP,
-  PRIMARY KEY (campaign_id, cloud_base_url),
-  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS campaigns (
   id SERIAL PRIMARY KEY,
   campaign_key TEXT NOT NULL UNIQUE,
@@ -255,6 +247,14 @@ CREATE TABLE IF NOT EXISTS campaigns (
   email_template_id TEXT,
   email_base_url TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS cloud_sync_state (
+  campaign_id INTEGER NOT NULL,
+  cloud_base_url TEXT NOT NULL,
+  last_synced_at TIMESTAMP,
+  PRIMARY KEY (campaign_id, cloud_base_url),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS invitations (
