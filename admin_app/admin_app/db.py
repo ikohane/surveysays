@@ -507,11 +507,34 @@ class PostgresDb:
         """Initialize PostgreSQL schema."""
         with self.connect() as conn:
             with conn.cursor() as cur:
-                # Execute schema in chunks (PostgreSQL doesn't support executescript)
-                for statement in SCHEMA_SQL_POSTGRES.split(';'):
-                    statement = statement.strip()
-                    if statement:
-                        cur.execute(statement)
+                # Execute entire schema as one transaction
+                # Split by CREATE TABLE and CREATE INDEX to preserve statement order
+                statements = []
+                current = []
+                for line in SCHEMA_SQL_POSTGRES.split('\n'):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if line.startswith('CREATE ') and current:
+                        # Finish previous statement
+                        statements.append('\n'.join(current))
+                        current = [line]
+                    else:
+                        current.append(line)
+                # Add last statement
+                if current:
+                    statements.append('\n'.join(current))
+                
+                # Execute each CREATE statement
+                for stmt in statements:
+                    stmt = stmt.strip().rstrip(';')
+                    if stmt:
+                        try:
+                            cur.execute(stmt)
+                        except Exception as e:
+                            # Skip if table already exists
+                            if 'already exists' not in str(e):
+                                raise
             conn.commit()
 
 
