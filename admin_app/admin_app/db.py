@@ -205,6 +205,22 @@ CREATE TABLE IF NOT EXISTS campaign_recipient_exclusions (
 
 CREATE INDEX IF NOT EXISTS idx_campaign_recipient_exclusions_campaign_id ON campaign_recipient_exclusions(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_campaign_recipient_exclusions_email ON campaign_recipient_exclusions(email);
+
+CREATE TABLE IF NOT EXISTS generation_waves (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaign_id INTEGER NOT NULL,
+  wave_number INTEGER NOT NULL,
+  picker_strategy TEXT NOT NULL,
+  k INTEGER NOT NULL,
+  seed INTEGER NOT NULL,
+  recipients_processed INTEGER NOT NULL,
+  variants_created INTEGER NOT NULL,
+  created_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+  UNIQUE (campaign_id, wave_number),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_generation_waves_campaign_id ON generation_waves(campaign_id);
 """
 
 
@@ -229,6 +245,7 @@ class Db:
             _ensure_submission_tables(conn)
             _ensure_cloud_tables(conn)
             _ensure_exclusions_table(conn)
+            _ensure_generation_waves_table(conn)
 
 
 def _try_add_column(conn: sqlite3.Connection, table: str, column_def: str) -> None:
@@ -548,6 +565,35 @@ def _ensure_exclusions_table(conn: sqlite3.Connection) -> None:
     )
 
 
+def _ensure_generation_waves_table(conn: sqlite3.Connection) -> None:
+    """Ensure generation_waves table exists and add wave_id to invitation_variants."""
+    conn.executescript(
+        f"""
+        CREATE TABLE IF NOT EXISTS generation_waves (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          campaign_id INTEGER NOT NULL,
+          wave_number INTEGER NOT NULL,
+          picker_strategy TEXT NOT NULL,
+          k INTEGER NOT NULL,
+          seed INTEGER NOT NULL,
+          recipients_processed INTEGER NOT NULL,
+          variants_created INTEGER NOT NULL,
+          created_at TEXT NOT NULL DEFAULT ({_utc_now_sql()}),
+          UNIQUE (campaign_id, wave_number),
+          FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_generation_waves_campaign_id ON generation_waves(campaign_id);
+        """
+    )
+    # Add wave_id column to invitation_variants if it doesn't exist
+    _try_add_column(conn, "invitation_variants", "wave_id INTEGER")
+    # Try to create index (may fail if it already exists, that's OK)
+    try:
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_invitation_variants_wave_id ON invitation_variants(wave_id)")
+    except sqlite3.OperationalError:
+        pass
+
+
 def _ensure_submission_tables(conn: sqlite3.Connection) -> None:
     # Create tables if they don't exist (CREATE TABLE IF NOT EXISTS is idempotent)
     conn.executescript(
@@ -781,9 +827,11 @@ def insert_variants(
     *,
     campaign_id: int,
     variants: list[dict[str, Any]],
+    wave_id: int | None = None,
 ) -> int:
     """
     variants: list of dicts shaped like BulkInvitation (email, questionnaireJson, metadata, ...)
+    wave_id: optional generation wave ID to track this batch
     """
     n = 0
     for inv in variants:
@@ -792,8 +840,8 @@ def insert_variants(
         conn.execute(
             """
             INSERT INTO invitation_variants
-              (campaign_id, email, case_id, questionnaire_json, questionnaire_hash, metadata_json)
-            VALUES (?, ?, ?, ?, ?, ?)
+              (campaign_id, email, case_id, questionnaire_json, questionnaire_hash, metadata_json, wave_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 campaign_id,
@@ -802,6 +850,7 @@ def insert_variants(
                 json.dumps(qjson, ensure_ascii=False),
                 meta.get("questionnaireHash") or "",
                 json.dumps(meta, ensure_ascii=False),
+                wave_id,
             ),
         )
         n += 1
@@ -814,11 +863,12 @@ def populate_invitations_from_variants(conn: sqlite3.Connection, *, campaign_id:
 
     - Keeps existing tokens stable if invitation already exists.
     - Writes questionnaire_json + questionnaire_hash onto invitations.
+    - Preserves wave_id for tracking generation waves.
     Returns number of invitations processed.
     """
     rows = conn.execute(
         """
-        SELECT email, questionnaire_json, questionnaire_hash
+        SELECT email, questionnaire_json, questionnaire_hash, wave_id
         FROM invitation_variants
         WHERE campaign_id = ?
         ORDER BY email
@@ -828,6 +878,8 @@ def populate_invitations_from_variants(conn: sqlite3.Connection, *, campaign_id:
     n = 0
     for r in rows:
         token = secrets.token_urlsafe(18)
+        # Note: invitations table doesn't have wave_id column for offline campaigns
+        # Wave tracking is maintained in invitation_variants table
         conn.execute(
             """
             INSERT INTO invitations (campaign_id, email, token, questionnaire_json, questionnaire_hash)
@@ -869,6 +921,97 @@ def variant_counts(conn: sqlite3.Connection, *, campaign_id: int) -> dict[str, i
     ).fetchone()
     assert row is not None
     return {"total": int(row["total"]), "distinct_hashes": int(row["distinct_hashes"])}
+
+
+# -----------------------------
+# Generation waves
+# -----------------------------
+
+
+def insert_generation_wave(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    wave_number: int,
+    picker_strategy: str,
+    k: int,
+    seed: int,
+    recipients_processed: int,
+    variants_created: int,
+) -> int:
+    """Insert a new generation wave record and return its ID."""
+    cur = conn.execute(
+        """
+        INSERT INTO generation_waves
+          (campaign_id, wave_number, picker_strategy, k, seed, recipients_processed, variants_created)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (campaign_id, wave_number, picker_strategy, k, seed, recipients_processed, variants_created),
+    )
+    return int(cur.lastrowid)
+
+
+def get_next_wave_number(conn: sqlite3.Connection, *, campaign_id: int) -> int:
+    """Get the next wave number for this campaign (1-based)."""
+    row = conn.execute(
+        """
+        SELECT MAX(wave_number) AS max_wave
+        FROM generation_waves
+        WHERE campaign_id = ?
+        """,
+        (campaign_id,),
+    ).fetchone()
+    max_wave = row["max_wave"] if row and row["max_wave"] is not None else 0
+    return int(max_wave) + 1
+
+
+def list_generation_waves(conn: sqlite3.Connection, *, campaign_id: int) -> list[sqlite3.Row]:
+    """List all generation waves for a campaign, ordered by wave number descending."""
+    return list(
+        conn.execute(
+            """
+            SELECT *
+            FROM generation_waves
+            WHERE campaign_id = ?
+            ORDER BY wave_number DESC
+            """,
+            (campaign_id,),
+        ).fetchall()
+    )
+
+
+def get_recipients_with_variants(conn: sqlite3.Connection, *, campaign_id: int) -> set[str]:
+    """
+    Return set of email addresses that already have variants for this campaign.
+    Works for both offline campaigns (via invitation_variants) and online campaigns (via invitations).
+    """
+    # For offline campaigns, check invitation_variants
+    offline_rows = conn.execute(
+        """
+        SELECT DISTINCT email
+        FROM invitation_variants
+        WHERE campaign_id = ?
+        """,
+        (campaign_id,),
+    ).fetchall()
+    
+    # For online campaigns, check invitations
+    online_rows = conn.execute(
+        """
+        SELECT DISTINCT email
+        FROM invitations
+        WHERE campaign_id = ?
+        """,
+        (campaign_id,),
+    ).fetchall()
+    
+    result = set()
+    for r in offline_rows:
+        result.add(str(r["email"]).lower().strip())
+    for r in online_rows:
+        result.add(str(r["email"]).lower().strip())
+    
+    return result
 
 
 def to_jsonable_row(row: sqlite3.Row) -> dict[str, Any]:
@@ -1112,12 +1255,20 @@ def insert_submission(
     email: str,
     answers: dict[str, Any],
 ) -> None:
+    """
+    Store a respondent submission.
+
+    We store answers_json as an object with a stable top-level key:
+      {"answers": {<block_id>: <value>, ...}}
+
+    This matches the Cloudflare Pages API contract and keeps downstream parsing consistent.
+    """
     conn.execute(
         """
         INSERT INTO submissions (campaign_id, token, email, answers_json)
         VALUES (?, ?, ?, ?)
         """,
-        (campaign_id, token, email, json.dumps(answers, ensure_ascii=False)),
+        (campaign_id, token, email, json.dumps({"answers": answers}, ensure_ascii=False)),
     )
 
 

@@ -70,6 +70,73 @@
   </div>
 
   <div class="card">
+    <h3 style="margin-top:0;">Variant Generation Waves</h3>
+    <div class="muted">
+      Strategy: <strong>{{ campaign['picker_strategy'] }}</strong> · K: <strong>{{ campaign['k'] }}</strong> · Seed: <strong>{{ campaign['seed'] }}</strong>
+    </div>
+    <div class="muted" style="margin-top: 6px;">
+      Generation status: <strong>{{ recipients_with_variants }}</strong> of <strong>{{ recipients_n }}</strong> recipients have variants
+      {% if pending_recipients > 0 %}
+        · <strong>{{ pending_recipients }}</strong> pending
+      {% endif %}
+    </div>
+    <div style="height: 12px;"></div>
+
+    {% if generation_waves %}
+      <h4 style="margin: 0 0 8px 0;">Wave History</h4>
+      <div style="max-height: 300px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Wave</th>
+              <th>Created</th>
+              <th>Recipients</th>
+              <th>Variants</th>
+              <th>Strategy</th>
+              <th>K</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for wave in generation_waves %}
+              <tr>
+                <td><strong>{{ wave['wave_number'] }}</strong></td>
+                <td>{{ wave['created_at']|edt }}</td>
+                <td>{{ wave['recipients_processed'] }}</td>
+                <td>{{ wave['variants_created'] }}</td>
+                <td><code>{{ wave['picker_strategy'] }}</code></td>
+                <td>{{ wave['k'] }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="muted" style="margin-bottom: 12px;">No generation waves yet. Generate your first wave below.</div>
+    {% endif %}
+
+    <form action="{{ url_for('generate_variants', campaign_key=campaign['campaign_key']) }}" method="post">
+      <button type="submit" {% if pending_recipients == 0 %}disabled{% endif %}>
+        {% if pending_recipients > 0 %}
+          Generate Wave {{ (generation_waves|length) + 1 }} for {{ pending_recipients }} new recipients
+        {% else %}
+          All recipients have variants
+        {% endif %}
+      </button>
+    </form>
+    
+    <div style="height: 10px;"></div>
+    {% if campaign['picker_strategy'] == 'online_assign' %}
+      <a href="{{ url_for('export_invitations_json', campaign_key=campaign['campaign_key']) }}">
+        <button class="secondary" type="button">Download invitations tokens JSON</button>
+      </a>
+    {% else %}
+      <a href="{{ url_for('export_bulk_json', campaign_key=campaign['campaign_key']) }}">
+        <button class="secondary" type="button">Download bulk variants JSON</button>
+      </a>
+    {% endif %}
+  </div>
+
+  <div class="card">
     <h3 style="margin-top:0;">Invited / opened / assigned / submitted</h3>
     <div class="muted">This is computed from `invitations` + `submissions` for this campaign.</div>
     <div style="height: 10px;"></div>
@@ -287,42 +354,128 @@
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Layout (YAML)</h3>
+    <h3 style="margin-top:0;">Email (Resend) settings</h3>
     <div class="muted">
-      Per-campaign layout config for respondent UI. This config is used locally and is pushed to Cloudflare as a parsed <code>layoutConfig</code>.
+      Emails will be sent to the actual recipient addresses. Use <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code> in templates to show the recipient's email.
     </div>
+    <div class="muted" style="margin-top: 6px;">
+      Link behavior: <strong>online_assign</strong> assigns on first open; <strong>offline</strong> renders the pre-generated snapshot.
+    </div>
+    {% if campaign['email_template_id'] %}
+      <div class="muted" style="margin-top: 6px;">Resend template id: <code>{{ campaign['email_template_id'] }}</code></div>
+    {% endif %}
     <div style="height: 10px;"></div>
-    <form action="{{ url_for('update_layout_yaml', campaign_key=campaign['campaign_key']) }}" method="post">
-      <textarea name="layout_yaml" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ layout_yaml }}</textarea>
+    <form action="{{ url_for('update_email_settings', campaign_key=campaign['campaign_key']) }}" method="post">
+      <div class="row">
+        <div>
+          <label>email_from</label>
+          <input type="text" name="email_from" value="{{ campaign['email_from'] or '' }}" placeholder="Name <sender@domain>" />
+        </div>
+        <div>
+          <label>email_subject</label>
+          <input type="text" name="email_subject" value="{{ campaign['email_subject'] or '' }}" placeholder="Subject line" />
+        </div>
+      </div>
       <div style="height: 10px;"></div>
-      <button class="secondary" type="submit">Save layout YAML</button>
+      <div class="row">
+        <div>
+          <label>email_base_url</label>
+          <input type="text" name="email_base_url" value="{{ campaign['email_base_url'] or 'http://127.0.0.1:5055' }}" />
+          <div class="muted" style="margin-top: 6px;">Links will be <code>{{ campaign['email_base_url'] or 'http://127.0.0.1:5055' }}/s/&lt;token&gt;</code></div>
+        </div>
+      </div>
+      <div style="height: 10px;"></div>
+      <label>email_html (Resend template body)</label>
+      <div class="muted">
+        Allowed variables:
+        <code>{% raw %}{{{SURVEY_LINK}}}{% endraw %}</code>,
+        <code>{% raw %}{{{CAMPAIGN_TITLE}}}{% endraw %}</code>,
+        <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code>,
+        <code>{% raw %}{{{RECIPIENT_FIRST_NAME}}}{% endraw %}</code>,
+        <code>{% raw %}{{{RECIPIENT_LAST_NAME}}}{% endraw %}</code>
+      </div>
+      <div class="muted" style="margin-top: 6px;">
+        <strong>Links work in both HTML and text clients:</strong> A plain text version is auto-generated that extracts URLs from
+        <code>&lt;a href="..."&gt;</code> tags. For best results, include <code>{% raw %}{{{SURVEY_LINK}}}{% endraw %}</code> in the href attribute.
+      </div>
+      <div style="height: 8px;"></div>
+      <details style="margin-bottom: 8px;">
+        <summary style="cursor: pointer; font-size: 13px; color: #6b7280;">Example template (click to expand)</summary>
+        <pre style="background: #f3f4f6; padding: 10px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin-top: 6px;">{% raw %}&lt;p&gt;Dear {{{RECIPIENT_FIRST_NAME}}},&lt;/p&gt;
+
+&lt;p&gt;You are invited to participate in our study: &lt;strong&gt;{{{CAMPAIGN_TITLE}}}&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href="{{{SURVEY_LINK}}}"&gt;Click here to begin the survey&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Or copy and paste this link into your browser:&lt;br/&gt;
+{{{SURVEY_LINK}}}&lt;/p&gt;
+
+&lt;p&gt;Thank you for your participation.&lt;/p&gt;{% endraw %}</pre>
+      </details>
+      <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ campaign['email_html'] or '' }}</textarea>
+      <div style="height: 10px;"></div>
+      <button class="secondary" type="submit">Save email settings</button>
     </form>
-    <div class="muted" style="margin-top: 10px;">
-      Effective layoutConfig: <code>{{ layout_config | tojson }}</code>
-    </div>
+    <div style="height: 10px;"></div>
+    <form action="{{ url_for('send_emails', campaign_key=campaign['campaign_key']) }}" method="post">
+      <button type="submit">Send invitation emails</button>
+    </form>
+    <div style="height: 10px;"></div>
+    <a href="{{ url_for('email_preview', campaign_key=campaign['campaign_key']) }}">
+      <button class="secondary" type="button">Dry-run preview (no send)</button>
+    </a>
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Email Settings (YAML)</h3>
+    <h3 style="margin-top:0;">Data Management (Global)</h3>
     <div class="muted">
-      Configure email template in YAML format. Changes here sync to the individual email fields below.
+      Import cases, recipients, and templates. These are shared across all campaigns.
+      After importing new recipients, generate a new wave below.
     </div>
-    <div class="muted" style="margin-top: 6px;">
-      Allowed variables:
-      <code>{% raw %}{{{SURVEY_LINK}}}{% endraw %}</code>,
-      <code>{% raw %}{{{CAMPAIGN_TITLE}}}{% endraw %}</code>,
-      <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code>,
-      <code>{% raw %}{{{RECIPIENT_FIRST_NAME}}}{% endraw %}</code>,
-      <code>{% raw %}{{{RECIPIENT_LAST_NAME}}}{% endraw %}</code>
-    </div>
-    <div style="height: 10px;"></div>
-    <form action="{{ url_for('update_email_yaml', campaign_key=campaign['campaign_key']) }}" method="post">
-      <textarea name="email_yaml" style="width:100%; min-height: 280px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: monospace; font-size: 13px;">{{ email_yaml }}</textarea>
-      <div style="height: 10px;"></div>
-      <button class="secondary" type="submit">Save Email YAML</button>
-    </form>
-    <div class="muted" style="margin-top: 10px;">
-      Parsed config: from=<code>{{ email_config.from_email }}</code>, subject=<code>{{ email_config.subject }}</code>, base_url=<code>{{ email_config.base_url }}</code>
+    <div style="height: 12px;"></div>
+    <div class="row">
+      <div class="card" style="margin:0;">
+        <h4 style="margin-top:0;">Import Cases</h4>
+        <form action="{{ url_for('import_cases') }}" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="campaign_key" value="{{ campaign['campaign_key'] }}" />
+          <label>cases.csv</label>
+          <input type="file" name="file" accept=".csv,text/csv" required />
+          <div style="height: 8px;"></div>
+          <label style="display:flex; gap:8px; align-items:center;">
+            <input type="checkbox" name="replace_existing" value="1" checked />
+            Replace existing
+          </label>
+          <div style="height: 8px;"></div>
+          <button class="secondary" type="submit">Import Cases</button>
+        </form>
+      </div>
+
+      <div class="card" style="margin:0;">
+        <h4 style="margin-top:0;">Import Recipients</h4>
+        <form action="{{ url_for('import_recipients') }}" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="campaign_key" value="{{ campaign['campaign_key'] }}" />
+          <label>recipients.csv</label>
+          <input type="file" name="file" accept=".csv,text/csv" required />
+          <div style="height: 8px;"></div>
+          <label style="display:flex; gap:8px; align-items:center;">
+            <input type="checkbox" name="replace_existing" value="1" />
+            Replace existing (uncheck to add new)
+          </label>
+          <div style="height: 8px;"></div>
+          <button class="secondary" type="submit">Import Recipients</button>
+        </form>
+      </div>
+
+      <div class="card" style="margin:0;">
+        <h4 style="margin-top:0;">Import Templates</h4>
+        <form action="{{ url_for('import_templates') }}" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="campaign_key" value="{{ campaign['campaign_key'] }}" />
+          <label>templates.csv</label>
+          <input type="file" name="file" accept=".csv,text/csv" required />
+          <div style="height: 8px;"></div>
+          <button class="secondary" type="submit">Import Templates</button>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -406,143 +559,43 @@
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Recommended first-time flow</h3>
-    <ol style="margin: 0; padding-left: 18px;">
-      <li>Import cases/recipients (once)</li>
-      <li>{% if campaign['picker_strategy'] == 'online_assign' %}Prepare online_assign{% else %}Generate variants{% endif %}</li>
-      <li>Configure email settings</li>
-      <li>Dry-run preview</li>
-      <li>Send invitation emails</li>
-    </ol>
-  </div>
-
-  <div class="card">
-    <h3 style="margin-top:0;">Actions</h3>
-    <div class="muted">These buttons reuse the same endpoints we’ll later map to Cloudflare/Resend deployment.</div>
-    <div style="height: 12px;"></div>
-
-    <details>
-      <summary style="cursor: pointer; font-weight: 700;">Advanced / Re-run (imports + generate)</summary>
-      <div class="muted" style="margin-top: 8px;">
-        Warning: Imports update global inputs (cases/recipients/templates). If you change inputs, re-run Generate/Prepare for this campaign.
-      </div>
-      <div style="height: 12px;"></div>
-      <div class="row">
-        <div class="card" style="margin:0;">
-          <h4 style="margin-top:0;">Imports</h4>
-          <form action="{{ url_for('import_cases') }}" method="post" enctype="multipart/form-data">
-            <label>cases.csv</label>
-            <input type="file" name="file" accept=".csv,text/csv" />
-            <div style="height: 8px;"></div>
-            <button class="secondary" type="submit">Import cases</button>
-          </form>
-          <div style="height: 10px;"></div>
-          <form action="{{ url_for('import_recipients') }}" method="post" enctype="multipart/form-data">
-            <label>recipients.csv</label>
-            <input type="file" name="file" accept=".csv,text/csv" />
-            <div style="height: 8px;"></div>
-            <button class="secondary" type="submit">Import recipients</button>
-          </form>
-          <div style="height: 10px;"></div>
-          <form action="{{ url_for('import_templates') }}" method="post" enctype="multipart/form-data">
-            <label>templates.csv</label>
-            <input type="file" name="file" accept=".csv,text/csv" />
-            <div style="height: 8px;"></div>
-            <button class="secondary" type="submit">Import templates</button>
-          </form>
-        </div>
-
-        <div class="card" style="margin:0;">
-          <h4 style="margin-top:0;">Generate / Prepare</h4>
-          <form action="{{ url_for('generate_variants', campaign_key=campaign['campaign_key']) }}" method="post">
-            <button type="submit">{% if campaign['picker_strategy'] == 'online_assign' %}Prepare online_assign{% else %}Generate variants{% endif %}</button>
-          </form>
-          <div style="height: 10px;"></div>
-          {% if campaign['picker_strategy'] == 'online_assign' %}
-            <a href="{{ url_for('export_invitations_json', campaign_key=campaign['campaign_key']) }}">
-              <button class="secondary" type="button">Download invitations tokens JSON</button>
-            </a>
-          {% else %}
-            <a href="{{ url_for('export_bulk_json', campaign_key=campaign['campaign_key']) }}">
-              <button class="secondary" type="button">Download bulk variants JSON</button>
-            </a>
-          {% endif %}
-        </div>
-      </div>
-    </details>
-  </div>
-
-  <div class="card">
-    <h3 style="margin-top:0;">Email (Resend) settings</h3>
+    <h3 style="margin-top:0;">Layout (YAML)</h3>
     <div class="muted">
-      Emails will be sent to the actual recipient addresses. Use <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code> in templates to show the recipient's email.
+      Per-campaign layout config for respondent UI. This config is used locally and is pushed to Cloudflare as a parsed <code>layoutConfig</code>.
+    </div>
+    <div style="height: 10px;"></div>
+    <form action="{{ url_for('update_layout_yaml', campaign_key=campaign['campaign_key']) }}" method="post">
+      <textarea name="layout_yaml" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ layout_yaml }}</textarea>
+      <div style="height: 10px;"></div>
+      <button class="secondary" type="submit">Save layout YAML</button>
+    </form>
+    <div class="muted" style="margin-top: 10px;">
+      Effective layoutConfig: <code>{{ layout_config | tojson }}</code>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Email Settings (YAML)</h3>
+    <div class="muted">
+      Configure email template in YAML format. Changes here sync to the individual email fields below.
     </div>
     <div class="muted" style="margin-top: 6px;">
-      Link behavior: <strong>online_assign</strong> assigns on first open; <strong>offline</strong> renders the pre-generated snapshot.
+      Allowed variables:
+      <code>{% raw %}{{{SURVEY_LINK}}}{% endraw %}</code>,
+      <code>{% raw %}{{{CAMPAIGN_TITLE}}}{% endraw %}</code>,
+      <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code>,
+      <code>{% raw %}{{{RECIPIENT_FIRST_NAME}}}{% endraw %}</code>,
+      <code>{% raw %}{{{RECIPIENT_LAST_NAME}}}{% endraw %}</code>
     </div>
-    {% if campaign['email_template_id'] %}
-      <div class="muted" style="margin-top: 6px;">Resend template id: <code>{{ campaign['email_template_id'] }}</code></div>
-    {% endif %}
     <div style="height: 10px;"></div>
-    <form action="{{ url_for('update_email_settings', campaign_key=campaign['campaign_key']) }}" method="post">
-      <div class="row">
-        <div>
-          <label>email_from</label>
-          <input type="text" name="email_from" value="{{ campaign['email_from'] or '' }}" placeholder="Name <sender@domain>" />
-        </div>
-        <div>
-          <label>email_subject</label>
-          <input type="text" name="email_subject" value="{{ campaign['email_subject'] or '' }}" placeholder="Subject line" />
-        </div>
-      </div>
+    <form action="{{ url_for('update_email_yaml', campaign_key=campaign['campaign_key']) }}" method="post">
+      <textarea name="email_yaml" style="width:100%; min-height: 280px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: monospace; font-size: 13px;">{{ email_yaml }}</textarea>
       <div style="height: 10px;"></div>
-      <div class="row">
-        <div>
-          <label>email_base_url</label>
-          <input type="text" name="email_base_url" value="{{ campaign['email_base_url'] or 'http://127.0.0.1:5055' }}" />
-          <div class="muted" style="margin-top: 6px;">Links will be <code>{{ campaign['email_base_url'] or 'http://127.0.0.1:5055' }}/s/&lt;token&gt;</code></div>
-        </div>
-      </div>
-      <div style="height: 10px;"></div>
-      <label>email_html (Resend template body)</label>
-      <div class="muted">
-        Allowed variables:
-        <code>{% raw %}{{{SURVEY_LINK}}}{% endraw %}</code>,
-        <code>{% raw %}{{{CAMPAIGN_TITLE}}}{% endraw %}</code>,
-        <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code>,
-        <code>{% raw %}{{{RECIPIENT_FIRST_NAME}}}{% endraw %}</code>,
-        <code>{% raw %}{{{RECIPIENT_LAST_NAME}}}{% endraw %}</code>
-      </div>
-      <div class="muted" style="margin-top: 6px;">
-        <strong>Links work in both HTML and text clients:</strong> A plain text version is auto-generated that extracts URLs from
-        <code>&lt;a href="..."&gt;</code> tags. For best results, include <code>{% raw %}{{{SURVEY_LINK}}}{% endraw %}</code> in the href attribute.
-      </div>
-      <div style="height: 8px;"></div>
-      <details style="margin-bottom: 8px;">
-        <summary style="cursor: pointer; font-size: 13px; color: #6b7280;">Example template (click to expand)</summary>
-        <pre style="background: #f3f4f6; padding: 10px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin-top: 6px;">{% raw %}&lt;p&gt;Dear {{{RECIPIENT_FIRST_NAME}}},&lt;/p&gt;
-
-&lt;p&gt;You are invited to participate in our study: &lt;strong&gt;{{{CAMPAIGN_TITLE}}}&lt;/strong&gt;.&lt;/p&gt;
-
-&lt;p&gt;&lt;a href="{{{SURVEY_LINK}}}"&gt;Click here to begin the survey&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;Or copy and paste this link into your browser:&lt;br/&gt;
-{{{SURVEY_LINK}}}&lt;/p&gt;
-
-&lt;p&gt;Thank you for your participation.&lt;/p&gt;{% endraw %}</pre>
-      </details>
-      <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ campaign['email_html'] or '' }}</textarea>
-      <div style="height: 10px;"></div>
-      <button class="secondary" type="submit">Save email settings</button>
+      <button class="secondary" type="submit">Save Email YAML</button>
     </form>
-    <div style="height: 10px;"></div>
-    <form action="{{ url_for('send_emails', campaign_key=campaign['campaign_key']) }}" method="post">
-      <button type="submit">Send invitation emails</button>
-    </form>
-    <div style="height: 10px;"></div>
-    <a href="{{ url_for('email_preview', campaign_key=campaign['campaign_key']) }}">
-      <button class="secondary" type="button">Dry-run preview (no send)</button>
-    </a>
+    <div class="muted" style="margin-top: 10px;">
+      Parsed config: from=<code>{{ email_config.from_email }}</code>, subject=<code>{{ email_config.subject }}</code>, base_url=<code>{{ email_config.base_url }}</code>
+    </div>
   </div>
 {% endblock %}
 

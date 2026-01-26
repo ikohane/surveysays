@@ -1,313 +1,162 @@
-# SurveySays (Local-first)
+# SurveySays
+
+A local-first survey authoring and delivery system for creating personalized questionnaires, sending invitation emails, and collecting responses.
 
 **Author:** Isaac Kohane  
-**License:** MIT (see `LICENSE`)
+**License:** MIT
 
-SurveySays is a local-first survey authoring and delivery system: you compile questionnaire content locally (from CSVs/templates) into a safe JSON format, manage campaigns and recipients in a local Admin UI, and then deliver surveys by emailing a link where the respondent’s browser retrieves (or is assigned) the questionnaire and submits results back to the study operator. A key mode—recommended by collaborator **Payal Chandak**—is **just-in-time questionnaire configuration on link-open**: when the recipient opens the email link, the system assigns the question set at that moment and snapshots it for reproducibility.
+---
 
-This repo currently contains:
+## 📚 Documentation
 
-- **`qgen/`**: a local questionnaire generator that produces per-recipient questionnaire JSON variants
-- **`admin_app/`**: a local Admin web app (Flask + SQLite) to import CSVs, manage campaigns, generate variants, preview, and export bulk payloads for later Cloudflare upload
-- **Database docs**: see [`docs/database/README.md`](docs/database/README.md) for schema and rationale
+Choose the guide that matches your role:
 
-## Requirements
+### 👥 [**User Guide**](README.USER.md) - For Survey Administrators
+**Start here if you want to create and send surveys**
 
-- Python **3.11+**
-- Flask (already available in many Python installs; if not, install it)
+Learn how to:
+- Create surveys from question banks
+- Send personalized invitation emails
+- Manage recipients and campaigns
+- Track and export results
+- Deploy to production (cloud hosting)
 
-## Sample data
+Perfect for researchers, study coordinators, and survey administrators.
 
-- `sample_data/cases.csv`
-- `sample_data/recipients.csv`
-- `sample_data/templates.csv`
-- `sample_data/param_vector.json`
+### 🔧 [**Technical Guide**](README.TECHNICAL.md) - For Developers
+**Start here if you want to understand the system architecture**
 
-## `cases.csv` in the Admin app (what it does)
+Learn about:
+- System architecture and components
+- Database schema and design
+- API endpoints and contracts
+- CSV file formats and validation
+- Deployment and configuration
 
-`cases.csv` is the **authoring-time question bank** input for case-based studies.
+Perfect for developers, DevOps engineers, and technical collaborators.
 
-- **Import**: In the local Admin UI, uploading `cases.csv` (endpoint `POST /imports/cases`) parses it with `qgen.io_csv.parse_cases_csv` and upserts it into the local SQLite `cases` table.
-- **Offline generation** (`pick_k_cases`): clicking **Generate** uses the imported cases to pick **K** cases per recipient and build per-recipient questionnaire JSON variants.
-- **Online assignment** (`online_assign`): clicking **Prepare** turns the imported cases into a `question_items` bank; then when a respondent opens `/s/<token>`, the system assigns **K** items and snapshots the resulting questionnaire JSON onto the invitation.
+---
 
-## Run the local Admin web app
+## ⚡ Quick Start
 
-From the repo root:
+**Prerequisites:**
+- Python 3.11 or newer
+- 10 minutes for setup
 
+**Installation:**
 ```bash
-cd "/Users/zak/Dropbox (Personal)/Coding/SurveySays"
+# Navigate to the project folder
+cd /path/to/SurveySays
+
+# Install dependencies
+pip install -e ./admin_app -e ./qgen
+
+# Set up email sending (optional but recommended)
+export RESEND_API_KEY='your_api_key'  # Get free key at resend.com
+
+# Start the admin application
 export PYTHONPATH="$(pwd)/qgen"
 python3 -m admin_app.admin_app.app
 ```
 
-Then open `http://127.0.0.1:5055`.
+**Open in browser:** http://127.0.0.1:5055
 
-### Typical workflow
+Then follow the [User Guide](README.USER.md) to create your first survey!
 
-- Import `sample_data/cases.csv`
-- Import `sample_data/recipients.csv`
-- (Optional) Import `sample_data/templates.csv` if using template-based generation
-- Create a campaign (e.g. `demo_campaign`, seed `12345`, version `1`, picker strategy, K)
-- If using `template_expand`: open the campaign and upload `sample_data/param_vector.json`
-- Click **Generate**
-- Click **Preview** and **Stats**
-- Click **Download bulk JSON** (this is the payload intended for later Cloudflare ingestion)
+---
 
-### Online assignment mode (assignment on link-open)
+## 🎯 What Can This System Do?
 
-If you set a campaign’s picker strategy to **`online_assign`**:
+✅ **Create personalized surveys** - Each recipient gets a customized question set  
+✅ **Send invitation emails** - Automated email delivery with tracking  
+✅ **Collect responses** - Secure, one-time submission per recipient  
+✅ **Track participation** - Real-time response monitoring  
+✅ **Manage recipients** - Exclude/restore individuals, add new participants  
+✅ **Export results** - Download data for analysis  
+✅ **Scale to production** - Optional cloud hosting via Cloudflare  
 
-- Clicking **Prepare** creates:
-  - **Invitations** (one per recipient, each with a stable token)
-  - A **question bank** (from `cases.csv`)
-- Opening a respondent link **`/s/<token>`** performs **just-in-time questionnaire configuration**: it assigns **K** question items at first open, builds the questionnaire JSON, and **snapshots** the resulting `questionnaire_json` onto that invitation (subsequent opens are idempotent).
-- Export tokens via **Download invitations JSON** (endpoint: `"/campaigns/<campaign_key>/export_invitations.json"`).
+---
 
-This “assignment on first link-open” mode was added to satisfy a collaborator specification from **Payal Chandak**.
+## 🌟 Key Features
 
-## Submission (online_assign)
+### Local-First Design
+Work offline. Your computer hosts the admin interface and manages all data locally in SQLite. No external services required for basic functionality.
 
-In `online_assign` mode, respondents submit exactly once per token.
+### Two Delivery Modes
 
-- **Submit endpoint**: `POST /s/<token>/submit`
-- **Payload (conceptual, 1A answers map)**:
-  - `answers: { [blockId]: value }`
-  - where `value` is:
-    - `singleSelect`: a `choice.id` string
-    - `freeText`: a string
-- **Repeat submits**: return **HTTP 409 Conflict** (first submit wins).
+**Local Mode** (Testing & Small Studies)
+- Surveys hosted on your machine
+- Good for testing and trusted recipients
+- Zero external dependencies
 
-The local simulated respondent page (`/s/<token>`) renders an HTML form and posts to the submit endpoint.
+**Cloud Mode** (Production & Large Studies)
+- Surveys hosted on Cloudflare (free tier available)
+- Professional hosting with your custom domain
+- Automatic result synchronization to local database
 
-## Results (local)
+### Intelligent Question Assignment
 
-- Master view includes campaign-level counts and tables.
-- Results page: `/campaigns/<campaign_key>/results` shows aggregated `singleSelect` counts and recent `freeText` answers.
-- **Submissions Detail**: `/campaigns/<campaign_key>/submissions` shows per-recipient answers. Access via the "View Individual Submissions" button on the Results page.
+**Pick K Cases** - Randomly select K questions per recipient  
+**Online Assign** - Assign questions when recipient opens link (balances distribution)  
+**Template Expand** - Generate questions from templates with variables (advanced)
 
-## Recipient Management
+### Email Integration
+Professional email sending via [Resend.com](https://resend.com):
+- HTML + plain text multipart emails
+- Personalized variables (name, custom link, etc.)
+- Preview before sending
+- Rate limiting and retry logic
+- Free tier: 3,000 emails/month
 
-Each campaign has a **Recipients** page (`/campaigns/<campaign_key>/recipients`) accessible from the Master view navigation bar.
+---
 
-**Features:**
-- View all recipients associated with this campaign (those with invitations generated)
-- **Exclude** recipients from a campaign (prevents email sending)
-- **Restore** previously excluded recipients
-- See submission status and token creation status per recipient
+## 📊 Example Use Cases
 
-**How it works:**
-- Recipients are added to a campaign when you **Generate variants**
-- Excluding a recipient removes their invitation and prevents email delivery
-- Exclusions are campaign-specific (the same recipient can be active in other campaigns)
+### Clinical Case Studies
+Import 50 clinical vignettes. Each physician receives 5 random cases. Track diagnostic decisions and compare across specialties.
 
-## Email Sending (Resend)
+### Survey Research
+Create 100 survey questions. Each participant receives 20 questions. Balance question distribution across the participant pool.
 
-The Admin app integrates with [Resend](https://resend.com) for sending invitation emails.
+### A/B Testing
+Generate question variants from templates. Randomly assign variants to recipients. Compare response patterns.
 
-**Setup:**
-- Set `RESEND_API_KEY` environment variable
+---
 
-**Features:**
-- Emails are sent to actual recipient addresses
-- **Multipart emails**: Both HTML and plain text versions are sent for compatibility
-- Plain text version auto-generated from HTML (URLs extracted from `<a>` tags)
-- Template variables: `{{{SURVEY_LINK}}}`, `{{{CAMPAIGN_TITLE}}}`, `{{{RECIPIENT_EMAIL}}}`, `{{{RECIPIENT_FIRST_NAME}}}`, `{{{RECIPIENT_LAST_NAME}}}`
+## 🚀 System Components
 
-**Email preview**: Use "Dry-run preview" to see rendered emails before sending.
+- **`qgen/`** - Question generator (Python library)
+- **`admin_app/`** - Admin web interface (Flask + SQLite)
+- **`cloudflare/pages/`** - Cloud deployment (Cloudflare Pages + D1)
+- **`sample_data/`** - Example CSV files and configuration
 
-## Admin mode: Local vs Cloud (global toggle)
+---
 
-The local Admin UI supports **two global modes** (toggle on the home screen):
+## 📖 Getting Started
 
-- **Local mode**: end-to-end local operation (local `/s/<token>` links, local submissions).
-- **Cloud mode**: production-like delivery. Campaigns are pushed to Cloudflare for respondent delivery, and submissions are **synced back into local SQLite** so analysis/exports still run locally.
+1. **[User Guide](README.USER.md)** - Complete setup and usage instructions
+2. **[Technical Guide](README.TECHNICAL.md)** - Architecture and development docs
+3. **[Cloudflare Deployment](cloudflare/pages/PROVISIONING.md)** - Production hosting setup
 
-You can set the default at startup with:
+---
 
-- `ADMIN_MODE_DEFAULT=local|cloud` (optional; the UI selection is persisted in SQLite and overrides the default)
+## 🆘 Need Help?
 
-## Next steps (Cloudflare + Resend)
+**Common Questions:**
+- How do I format my question file? → [User Guide: CSV Files](README.USER.md#step-1-prepare-your-data-files)
+- How do I send emails? → [User Guide: Email Setup](README.USER.md#step-2-configure-email-sending-optional-but-recommended)
+- How do I deploy to production? → [User Guide: Cloud Mode Setup](README.USER.md#cloud-mode-setup-optional---for-production)
+- What's the database schema? → [Technical Guide: Database](README.TECHNICAL.md) or [docs/database/README.md](docs/database/README.md)
 
-From the project plan (`.cursor/plans/qgen-local-admin.plan.md`), the next parallel steps to take once local authoring is stable:
+**Troubleshooting:**
+See the [User Guide Troubleshooting Section](README.USER.md#troubleshooting) for common issues and solutions.
 
-- **Cloudflare**: deploy a staging site on `study-staging.hvp.global` using Cloudflare Pages + Pages Functions + D1, then add Cloudflare Access to protect admin workflows. See the Cloudflare docs in [`cloudflare/pages/PROVISIONING.md`](cloudflare/pages/PROVISIONING.md).
-- **Resend**: verify domain + sender for deliverability so the system can email invitations at scale.
+---
 
-## Cloudflare (staging, v0.5)
+## 📄 License
 
-We ship a minimal cloud slice for v0.5: **respondent + API only** (no cloud Admin UI yet).
+MIT License - see [LICENSE](LICENSE) file for details.
 
-- Respondents submit on Cloudflare.
-- In **Cloud mode**, the local Admin app will **sync submissions down into local SQLite** (auto on Master/Results with a short TTL, plus a manual “Sync from Cloudflare now” button) so downstream analysis and exports can stay local.
+---
 
-- **Docs**: [`cloudflare/pages/PROVISIONING.md`](cloudflare/pages/PROVISIONING.md)
-- **Respondent**:
-  - `GET /s/<token>` (survey page)
-- **API**:
-  - `GET /api/survey/<token>`
-  - `POST /api/submit/<token>` (returns **409** on repeat submission)
-- **Admin (bearer)**:
-  - `GET /api/admin/ping`
-  - `POST /api/admin/upload` (ingests bulk payload, returns `{email, token}`)
-  - `GET /api/admin/export/<campaignKey>`
-
-### Programmatic push from the local Admin app (no manual download/upload)
-
-Set these env vars in the same shell where you run the local Admin server:
-- `CLOUDFLARE_STUDY_BASE_URL` (example: `https://study-staging.hvp.global`)
-- `CLOUDFLARE_ADMIN_TOKEN` (the Pages `ADMIN_TOKEN` secret)
-
-Then open the campaign **Master view** and use **“Push to Cloudflare (generate tokens)”**. The local app will:
-
-- Build the bulk invitations payload in-memory
-- POST to `${CLOUDFLARE_STUDY_BASE_URL}/api/admin/upload`
-- Store the returned `{email, token}` mapping locally
-- Show the tokens in the campaign Master view, and provide CSV exports
-
-In **Cloud mode**, Master view also provides:
-
-- **“Sync from Cloudflare now”**: fetches `GET ${CLOUDFLARE_STUDY_BASE_URL}/api/admin/export/<campaignKey>` and upserts submissions into the local SQLite DB.
-- Auto-sync on Master/Results (TTL-based) so local counts typically stay current during analysis.
-
-Note: your staging may have an additional Cloudflare WAF rule (IP allow-list) for `/api/admin/*`, so pushing will only work from an allowed IP. If you are blocked unexpectedly, check whether your machine is using IPv6 (it can change frequently).
-
-#### Multi-push (“waves”) semantics
-If you push the same `campaignKey` to Cloudflare multiple times, Cloudflare will generate a new token set each time. The local Admin app retains full push history and shows:
-- **Latest tokens (one per email)** for emailing
-- **History (by push/wave)** for debugging and audits
-- **Event log** (Master view) shows the most recent user actions, their campaign context, status (success/failure), and any error message.
-- CSV exports:
-  - Latest: **Download latest cloud tokens CSV**
-  - Full history: **Download tokens history CSV**
-
-#### TLS / certificate errors (macOS/Homebrew Python)
-If you see `CERTIFICATE_VERIFY_FAILED` when pushing to Cloudflare, upgrade/install `certifi` and re-run. The Admin app prefers `certifi`’s CA bundle for outbound HTTPS.
-The same fix also covers Resend API calls (`create_template`, `send_email_with_template`) when the dashboard complained about SSL.
-
-#### Local DB migration note (push history)
-If you pulled a version that introduced “push history” and your local Admin server fails to start with a SQLite schema error, `git pull` again and restart. If you’re still stuck, you can move aside your local DB at `out/local_admin.sqlite3` (you’ll lose local state).
-
-## Run qGen directly (CLI)
-
-The CLI currently supports **Pick-K from `cases.csv`** (default) and outputs **K question pairs** per recipient via `--k`.
-
-```bash
-cd "/Users/zak/Dropbox (Personal)/Coding/SurveySays"
-PYTHONPATH="$(pwd)/qgen" python3 -m qgen \
-  --campaign-key demo_campaign \
-  --title "Clinical Case Decision Survey" \
-  --version 1 \
-  --seed 12345 \
-  --cases-csv sample_data/cases.csv \
-  --recipients-csv sample_data/recipients.csv \
-  --out out/bulk_invitations.json
-```
-
-To generate **K=2** question pairs per recipient:
-
-```bash
-cd "/Users/zak/Dropbox (Personal)/Coding/SurveySays"
-PYTHONPATH="$(pwd)/qgen" python3 -m qgen \
-  --campaign-key demo_campaign \
-  --title "Clinical Case Decision Survey" \
-  --version 1 \
-  --seed 12345 \
-  --cases-csv sample_data/cases.csv \
-  --recipients-csv sample_data/recipients.csv \
-  --k 2 \
-  --out out/bulk_invitations.json
-```
-
-## CSV contracts
-
-### `cases.csv`
-
-Required columns:
-- `case_id`
-- `vignette`
-- `prompt`
-
-Choices: provide either
-- `choices_json`: JSON array like `[{"id":"A","label":"..."}, ...]`, or
-- columns named `choice_*` (e.g. `choice_A`, `choice_B`, ...). The suffix becomes the choice id.
-
-Optional:
-- `tags`: pipe-separated, e.g. `cardio|adult`
-
-### `recipients.csv`
-
-Required columns:
-- `email`
-- `firstname`
-- `lastname`
-
-All other columns become `recipientStrata` metadata.
-
-### `templates.csv` (for `template_expand`)
-
-Required columns:
-- `template_id`
-- `vignette_template` (may include `{var}` placeholders)
-- `prompt_template` (may include `{var}` placeholders)
-
-Choices: provide either
-- `choices_json`: JSON array like `[{"id":"A","label":"..."}]` (labels may include `{var}` placeholders), or
-- columns named `choice_*` (e.g. `choice_A`, `choice_B`, ...). Labels may include `{var}` placeholders.
-
-Optional:
-- `tags`: pipe-separated, e.g. `template|demo`
-- `rules_yaml`: inline YAML defining per-template variable selection rules
-
-### `param_vector.json` (for `template_expand`)
-
-MVP schema:
-
-```json
-{
-  "pools": {
-    "varName": ["v1", "v2"],
-    "age": [24, 37]
-  }
-}
-```
-
-The template `rules_yaml` references these pools.
-
-## Output format (bulk invitations JSON)
-
-The exported/downloaded JSON looks like:
-
-```json
-{
-  "campaignKey": "demo_campaign",
-  "invitations": [
-    {
-      "email": "alice@example.com",
-      "questionnaireVersion": 1,
-      "questionnaireJson": { "title": "...", "questionnaireVersion": 1, "blocks": [/* ... */] },
-      "metadata": {
-        "recipientStrata": { "site": "SiteA" },
-        "seed": 12345,
-        "k": 2,
-        "pickerStrategy": "pick_k_cases",
-        "units": [
-          { "caseId": "case_001", "caseTags": ["cardio","adult"] },
-          { "caseId": "case_002", "caseTags": ["neuro","adult"] }
-        ],
-        "questionnaireHash": "..."
-      }
-    }
-  ]
-}
-```
-
-## Questionnaire JSON blocks (MVP)
-
-Blocks are rendered in order. Current supported block types:
-
-- **`vignette`**: `{ type: "vignette", id, text }`
-- **`singleSelect`**: `{ type: "singleSelect", id, prompt, required: true, choices: [{id,label}, ...] }`
-- **`freeText` (MVP)**: `{ type: "freeText", id, prompt, required: true }` (short, single-line)
-
-
+**Ready to create your first survey?** → Start with the [**User Guide**](README.USER.md) 🎯

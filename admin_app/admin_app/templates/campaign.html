@@ -91,39 +91,20 @@
   </div>
 
   <div class="card">
-    {% if campaign['picker_strategy'] == 'online_assign' %}
-      <h3 style="margin-top:0;">Prepare online assignment</h3>
-      <div class="muted">Creates invitations + a question bank. Assignment happens on first open of <code>/s/&lt;token&gt;</code>.</div>
-    {% else %}
-      <h3 style="margin-top:0;">Generate per-recipient variants</h3>
-      <div class="muted">Generation is deterministic for the same inputs (seed={{ campaign['seed'] }}).</div>
-    {% endif %}
-    <div style="height: 10px;"></div>
-    <div class="actions">
-      <form action="{{ url_for('generate_variants', campaign_key=campaign['campaign_key']) }}" method="post">
-        <button type="submit">{% if campaign['picker_strategy'] == 'online_assign' %}Prepare{% else %}Generate{% endif %}</button>
-      </form>
-      {% if campaign['picker_strategy'] == 'online_assign' %}
-        <a href="{{ url_for('export_invitations_json', campaign_key=campaign['campaign_key']) }}">
-          <button class="secondary" type="button" {% if not inv_counts or inv_counts.total == 0 %}disabled{% endif %}>Download invitations JSON</button>
-        </a>
-      {% else %}
-        <a href="{{ url_for('export_bulk_json', campaign_key=campaign['campaign_key']) }}">
-          <button class="secondary" type="button" {% if counts.total == 0 %}disabled{% endif %}>Download bulk JSON</button>
-        </a>
-      {% endif %}
+    <h3 style="margin-top:0;">Next Steps</h3>
+    <div class="muted">
+      Go to the <strong>Master page</strong> to:
     </div>
-    {% if campaign['picker_strategy'] == 'online_assign' %}
-      {% if not inv_counts or inv_counts.total == 0 %}
-        <div class="muted" style="margin-top: 8px;">Prepare first to create tokens and enable export.</div>
-      {% else %}
-        <div class="muted" style="margin-top: 8px;">Open a token link to trigger assignment and snapshotting.</div>
-      {% endif %}
-    {% else %}
-      {% if counts.total == 0 %}
-        <div class="muted" style="margin-top: 8px;">Generate first to enable export.</div>
-      {% endif %}
-    {% endif %}
+    <ul style="margin: 10px 0 0 20px;">
+      <li>Import cases, recipients, and templates (if needed)</li>
+      <li>Generate variants for recipients (supports incremental waves)</li>
+      <li>Configure and send invitation emails</li>
+      <li>Monitor submissions and results</li>
+    </ul>
+    <div style="height: 10px;"></div>
+    <a href="{{ url_for('master_view', campaign_key=campaign['campaign_key']) }}">
+      <button type="button">Go to Master Page</button>
+    </a>
   </div>
 {% endblock %}
 

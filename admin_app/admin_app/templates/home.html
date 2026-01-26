@@ -25,60 +25,19 @@
   </div>
 
   <div class="card">
-    <div class="row">
-      <div>
-        <h2 style="margin: 0 0 6px 0;">Imports</h2>
-        <div class="muted">DB: {{ db_path }}</div>
-        <div class="muted" style="margin-top:6px;">
-          Currently loaded:
-          <strong>{{ cases_count }}</strong> cases
-          {% if cases_last_updated %}<span class="muted">(last update: {{ cases_last_updated|edt }})</span>{% endif %}
-          · <strong>{{ recipients_count }}</strong> recipients
-          {% if recipients_last_updated %}<span class="muted">(last update: {{ recipients_last_updated|edt }})</span>{% endif %}
-          · <strong>{{ templates_count }}</strong> templates
-          {% if templates_last_updated %}<span class="muted">(last update: {{ templates_last_updated|edt }})</span>{% endif %}
-        </div>
-      </div>
+    <h2 style="margin: 0 0 6px 0;">Global Data</h2>
+    <div class="muted">DB: {{ db_path }}</div>
+    <div class="muted" style="margin-top:6px;">
+      Currently loaded:
+      <strong>{{ cases_count }}</strong> cases
+      {% if cases_last_updated %}<span class="muted">(last update: {{ cases_last_updated|edt }})</span>{% endif %}
+      · <strong>{{ recipients_count }}</strong> recipients
+      {% if recipients_last_updated %}<span class="muted">(last update: {{ recipients_last_updated|edt }})</span>{% endif %}
+      · <strong>{{ templates_count }}</strong> templates
+      {% if templates_last_updated %}<span class="muted">(last update: {{ templates_last_updated|edt }})</span>{% endif %}
     </div>
-    <div class="row" style="margin-top: 12px;">
-      <form class="card" style="margin:0;" action="{{ url_for('import_cases') }}" method="post" enctype="multipart/form-data">
-        <h3 style="margin-top:0;">Import cases.csv</h3>
-        <label>CSV File</label>
-        <input type="file" name="file" accept=".csv,text/csv" required />
-        <div style="height: 8px;"></div>
-        <label style="display:flex; gap:8px; align-items:center;">
-          <input type="checkbox" name="replace_existing" value="1" checked />
-          Replace existing cases (recommended)
-        </label>
-        <div style="height: 10px;"></div>
-        <button type="submit">Import Cases</button>
-        <div class="muted" style="margin-top:8px;">Required columns: case_id, vignette, prompt + choices (choices_json or choice_* columns)</div>
-      </form>
-      <form class="card" style="margin:0;" action="{{ url_for('import_recipients') }}" method="post" enctype="multipart/form-data">
-        <h3 style="margin-top:0;">Import recipients.csv</h3>
-        <label>CSV File</label>
-        <input type="file" name="file" accept=".csv,text/csv" required />
-        <div style="height: 8px;"></div>
-        <label style="display:flex; gap:8px; align-items:center;">
-          <input type="checkbox" name="replace_existing" value="1" checked />
-          Replace existing recipients (recommended)
-        </label>
-        <div style="height: 10px;"></div>
-        <button type="submit">Import Recipients</button>
-        <div class="muted" style="margin-top:8px;">
-          Required columns: email, firstname, lastname. Other columns become strata.
-          <br />
-          Note: replacing avoids accidentally mixing cohorts from a prior import.
-        </div>
-      </form>
-      <form class="card" style="margin:0;" action="{{ url_for('import_templates') }}" method="post" enctype="multipart/form-data">
-        <h3 style="margin-top:0;">Import templates.csv</h3>
-        <label>CSV File</label>
-        <input type="file" name="file" accept=".csv,text/csv" required />
-        <div style="height: 10px;"></div>
-        <button type="submit">Import Templates</button>
-        <div class="muted" style="margin-top:8px;">Required columns: template_id, vignette_template, prompt_template + choices (choices_json or choice_* columns). Optional: rules_yaml.</div>
-      </form>
+    <div class="muted" style="margin-top:10px;">
+      To import cases, recipients, or templates, go to the <strong>Master page</strong> for any campaign.
     </div>
   </div>
 
@@ -87,9 +46,7 @@
     <form action="{{ url_for('campaigns_upsert') }}" method="post" class="card" style="margin: 0 0 14px 0;">
       <h3 style="margin-top:0;">Create / Update Campaign</h3>
       <div class="muted" style="margin: 6px 0 12px 0;">
-        This campaign will use <strong>{{ recipients_count }}</strong> recipients and <strong>{{ cases_count }}</strong> cases currently loaded.
-        {% if recipients_count == 0 %}<span class="muted"> (import recipients.csv first)</span>{% endif %}
-        {% if cases_count == 0 %}<span class="muted"> (import cases.csv first)</span>{% endif %}
+        After creating a campaign, configure picker strategy on the Campaign page, then import data and generate variants on the Master page.
       </div>
       <div class="row">
         <div>
@@ -111,22 +68,8 @@
           <input name="questionnaire_version" type="number" value="1" required />
         </div>
       </div>
-      <div class="row" style="margin-top: 12px;">
-        <div>
-          <label>picker_strategy</label>
-          <select name="picker_strategy" style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px;">
-            <option value="pick_k_cases">pick_k_cases (from cases.csv)</option>
-            <option value="template_expand">template_expand (from templates.csv + param_vector.json)</option>
-            <option value="online_assign">online_assign (assign on link-open)</option>
-          </select>
-        </div>
-        <div>
-          <label>k (questions per recipient)</label>
-          <input name="k" type="number" value="1" min="1" required />
-        </div>
-      </div>
       <div style="height: 12px;"></div>
-      <button type="submit">Save Campaign</button>
+      <button type="submit">Create Campaign</button>
     </form>
 
     {% if campaigns %}
@@ -148,7 +91,10 @@
               <td>{{ c['title'] }}</td>
               <td>{{ c['seed'] }}</td>
               <td>{{ c['questionnaire_version'] }}</td>
-              <td><a href="{{ url_for('master_view', campaign_key=c['campaign_key']) }}">master</a></td>
+              <td>
+                <a href="{{ url_for('campaign_detail', campaign_key=c['campaign_key']) }}">Configure</a> ·
+                <a href="{{ url_for('master_view', campaign_key=c['campaign_key']) }}">Master</a>
+              </td>
               <td class="muted">{{ c['created_at']|edt }}</td>
             </tr>
           {% endfor %}

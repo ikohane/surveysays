@@ -119,6 +119,26 @@ def main() -> int:
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parent
+    # Preflight: make dependency errors obvious (restart.py runs the same interpreter it was launched with).
+    dep_check = _run([sys.executable, "-c", "import flask"])  # Flask is required by admin_app.
+    if dep_check.returncode != 0:
+        admin_app_dir = repo_root / "admin_app"
+        print("Missing dependency: Flask")
+        print(f"  Python interpreter: {sys.executable}")
+        print("")
+        print("Fix (recommended): install the local admin_app package (pulls Flask from pyproject.toml):")
+        print(f"  {shlex.quote(sys.executable)} -m pip install -e {shlex.quote(str(admin_app_dir))}")
+        print("")
+        print("Or just install Flask into this interpreter:")
+        print(f"  {shlex.quote(sys.executable)} -m pip install 'flask>=3.0.0'")
+        print("")
+        print("Alternatively, run restart.py using a Python that already has the dependencies installed.")
+        if dep_check.stderr.strip():
+            print("")
+            print("Original import error:")
+            print(dep_check.stderr.strip())
+        return 1
+
     out_dir = repo_root / "out"
     out_dir.mkdir(parents=True, exist_ok=True)
     log_path = out_dir / "server.log"
@@ -173,7 +193,6 @@ def main() -> int:
         env["PYTHONUNBUFFERED"] = "1"
         with log_path.open("ab") as logf:
             p = subprocess.Popen(cmd, env=env, cwd=str(repo_root), stdout=logf, stderr=logf)
-        pid_path.write_text(str(p.pid), encoding="utf-8")
 
         # Health check: wait briefly for port bind
         time.sleep(0.6)
@@ -190,8 +209,11 @@ def main() -> int:
                 os.kill(p.pid, signal.SIGTERM)
             except Exception:
                 pass
+            # Don't write PID file if startup failed
             return 1
 
+        # Only write PID file after successful startup
+        pid_path.write_text(str(p.pid), encoding="utf-8")
         print(f"Server started in background (pid={p.pid}). Logs: {log_path}")
         return 0
 

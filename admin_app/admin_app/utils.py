@@ -197,3 +197,18 @@ def email_config_to_yaml(*, from_email: str, subject: str, base_url: str, html: 
         lines.append(f"  {line}")
     return "\n".join(lines)
 
+
+def parse_json_obj(text: str | None) -> dict[str, Any]:
+    """
+    Parse a JSON string into a dict; returns {} on empty/invalid/non-object.
+    Useful for resilient rendering of user-supplied / DB-stored JSON blobs.
+    """
+    s = (text or "").strip()
+    if not s:
+        return {}
+    try:
+        obj = json.loads(s)
+    except Exception:
+        return {}
+    return obj if isinstance(obj, dict) else {}
+

@@ -77,6 +77,7 @@ def main() -> None:
     assert evt_row and evt_row["n"] >= 1
 
     def create_campaign(*, campaign_key: str, picker_strategy: str, k: int) -> None:
+        # Step 1: Create campaign (no picker_strategy/k in new workflow)
         r = client.post(
             "/campaigns/upsert",
             data={
@@ -84,18 +85,28 @@ def main() -> None:
                 "title": "Integration Test Survey",
                 "seed": "12345",
                 "questionnaire_version": "1",
+            },
+            follow_redirects=True,
+        )
+        assert r.status_code == 200
+        assert campaign_key.encode("utf-8") in r.data
+        
+        # Step 2: Set picker_strategy and k via campaign settings
+        r = client.post(
+            f"/campaigns/{campaign_key}/settings",
+            data={
                 "picker_strategy": picker_strategy,
                 "k": str(k),
             },
             follow_redirects=True,
         )
         assert r.status_code == 200
-        assert campaign_key.encode("utf-8") in r.data
 
     def generate(campaign_key: str) -> None:
         r = client.post(f"/campaigns/{campaign_key}/generate", follow_redirects=True)
         assert r.status_code == 200
-        assert (b"Generated" in r.data) or (b"Online mode ready" in r.data), "Expected success flash after action"
+        # New wave-based messages include "Wave X:"
+        assert (b"Wave" in r.data and (b"Generated" in r.data or b"Created" in r.data)), "Expected success flash with wave info after generation"
 
     def export_payload(campaign_key: str) -> dict:
         resp = client.get(f"/campaigns/{campaign_key}/export.json")
@@ -296,7 +307,7 @@ def main() -> None:
     assert b"Master view" in r.data
     assert b"Invites ledger" in r.data
     assert b"Cloudflare staging" in r.data
-    assert b"Prepare online_assign" in r.data
+    assert b"Variant Generation Waves" in r.data  # Updated: new section name
     assert b"Email (Resend) settings" in r.data
     assert b"Send invitation emails" in r.data
     assert b"Dry-run preview" in r.data
