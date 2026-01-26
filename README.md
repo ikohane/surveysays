@@ -82,23 +82,30 @@ Then follow the [User Guide](README.USER.md) to create your first survey!
 ### Local-First Design
 Work offline. Your computer hosts the admin interface and manages all data locally in SQLite. No external services required for basic functionality.
 
-### Two Delivery Modes
+### Three Delivery Modes
 
 **Local Mode** (Testing & Small Studies)
 - Surveys hosted on your machine
 - Good for testing and trusted recipients
 - Zero external dependencies
 
-**Cloud Mode** (Production & Large Studies)
-- Surveys hosted on Cloudflare (free tier available)
+**Cloud Mode - Cloudflare** (Production & Large Studies)
+- Surveys hosted on Cloudflare Pages (free tier available)
+- Best for `pick_k_cases` and `template_expand` strategies
 - Professional hosting with your custom domain
 - Automatic result synchronization to local database
 
+**Cloud Mode - Railway** (Production & Online Assign)
+- Surveys hosted on Railway.app (free tier available)
+- **Designed for `online_assign` strategy** (just-in-time assignment)
+- Auto-deploy from GitHub
+- PostgreSQL database for question bank and stats
+
 ### Intelligent Question Assignment
 
-**Pick K Cases** - Randomly select K questions per recipient  
-**Online Assign** - Assign questions when recipient opens link (balances distribution)  
-**Template Expand** - Generate questions from templates with variables (advanced)
+**Pick K Cases** - Randomly select K questions per recipient (works with Cloudflare)  
+**Online Assign** - Assign questions when recipient opens link (requires Railway deployment)  
+**Template Expand** - Generate questions from templates with variables (works with Cloudflare)
 
 ### Email Integration
 Professional email sending via [Resend.com](https://resend.com):
@@ -145,7 +152,8 @@ Generate question variants from templates. Randomly assign variants to recipient
 **Common Questions:**
 - How do I format my question file? → [User Guide: CSV Files](README.USER.md#step-1-prepare-your-data-files)
 - How do I send emails? → [User Guide: Email Setup](README.USER.md#step-2-configure-email-sending-optional-but-recommended)
-- How do I deploy to production? → [User Guide: Cloud Mode Setup](README.USER.md#cloud-mode-setup-optional---for-production)
+- How do I deploy to production? → [Cloudflare Deployment](cloudflare/pages/PROVISIONING.md) or [Railway Deployment](docs/RAILWAY_DEPLOYMENT.md)
+- Which deployment should I use? → Cloudflare for `pick_k_cases`/`template_expand`, Railway for `online_assign`
 - What's the database schema? → [Technical Guide: Database](README.TECHNICAL.md) or [docs/database/README.md](docs/database/README.md)
 
 **Troubleshooting:**

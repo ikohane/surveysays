@@ -22,6 +22,16 @@ def get_cloud_config() -> tuple[str, str]:
     return base, token
 
 
+def get_railway_config() -> tuple[str, str]:
+    """
+    Returns (railway_base_url, railway_admin_token) from environment variables.
+    For Railway deployments of online_assign campaigns.
+    """
+    base = (os.environ.get("RAILWAY_APP_URL") or "").strip().rstrip("/")
+    token = (os.environ.get("RAILWAY_ADMIN_TOKEN") or "").strip()
+    return base, token
+
+
 def parse_simple_yaml_to_obj(text: str) -> dict[str, Any]:
     """
     Minimal YAML mapping parser for our small config shape.

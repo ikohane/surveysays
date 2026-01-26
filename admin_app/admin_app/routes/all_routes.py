@@ -4,6 +4,7 @@ import csv
 import io
 import json
 import os
+import secrets
 import sqlite3
 import hashlib
 from typing import Any
@@ -89,6 +90,7 @@ from ..utils import (
     cloud_post_json,
     email_config_to_yaml,
     get_cloud_config,
+    get_railway_config,
     parse_json_obj,
     render_email_preview,
 )
@@ -769,6 +771,7 @@ def register(app: Flask, db: Db) -> None:
     @app.get("/campaigns/<campaign_key>/master")
     def master_view(campaign_key: str) -> str:
         cloud_base_url, cloud_admin_token = get_cloud_config()
+        railway_app_url, _ = get_railway_config()
         with db.connect() as conn:
             campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
             if campaign is None:
@@ -884,6 +887,7 @@ def register(app: Flask, db: Db) -> None:
             cloud_sync_status=cloud_sync_status,
             cloud_sync_error=cloud_sync_error,
             cloud_admin_token_present=bool(cloud_admin_token),
+            railway_app_url=railway_app_url,
             event_log=events,
             generation_waves=generation_waves,
             recipients_with_variants=recipients_with_variants,
@@ -1637,5 +1641,333 @@ def register(app: Flask, db: Db) -> None:
             mimetype="application/json",
             headers={"Content-Disposition": f'attachment; filename="{campaign_key}.bulk_invitations.json"'},
         )
+
+    # -----------------------------
+    # Railway API endpoints
+    # -----------------------------
+    def _require_railway_auth() -> str | None:
+        """Check Railway admin token authentication. Returns error message or None."""
+        _, railway_admin_token = get_railway_config()
+        if not railway_admin_token:
+            return "RAILWAY_ADMIN_TOKEN not configured on server"
+        
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return "Missing Authorization header"
+        
+        provided_token = auth_header[7:].strip()
+        if provided_token != railway_admin_token:
+            return "Invalid admin token"
+        
+        return None
+
+    @app.post("/api/railway/sync_question_bank")
+    def railway_sync_question_bank() -> Response:
+        """
+        API endpoint for uploading question items and stats to Railway PostgreSQL.
+        Used by local admin UI to push online_assign campaigns.
+        """
+        auth_error = _require_railway_auth()
+        if auth_error:
+            return Response(json.dumps({"error": auth_error}), status=401, mimetype="application/json")
+        
+        try:
+            payload = request.get_json()
+            if not payload:
+                return Response(json.dumps({"error": "No JSON payload"}), status=400, mimetype="application/json")
+            
+            campaign_key = str(payload.get("campaignKey", "")).strip()
+            question_items = payload.get("questionItems", [])
+            
+            if not campaign_key:
+                return Response(json.dumps({"error": "campaignKey required"}), status=400, mimetype="application/json")
+            if not isinstance(question_items, list):
+                return Response(json.dumps({"error": "questionItems must be array"}), status=400, mimetype="application/json")
+            
+            with db.connect() as conn:
+                # Get or create campaign
+                campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+                if not campaign:
+                    return Response(json.dumps({"error": f"Campaign '{campaign_key}' not found"}), status=404, mimetype="application/json")
+                
+                campaign_id = int(campaign["id"])
+                
+                # Upsert question items
+                items_upserted = 0
+                for item in question_items:
+                    item_id = str(item.get("itemId", "")).strip()
+                    if not item_id:
+                        continue
+                    
+                    conn.execute(
+                        """
+                        INSERT INTO question_items (campaign_id, item_id, source_kind, source_id, vignette, prompt, choices_json, tags_json)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(campaign_id, item_id) DO UPDATE SET
+                            source_kind = excluded.source_kind,
+                            source_id = excluded.source_id,
+                            vignette = excluded.vignette,
+                            prompt = excluded.prompt,
+                            choices_json = excluded.choices_json,
+                            tags_json = excluded.tags_json
+                        """ if not db.is_postgres else """
+                        INSERT INTO question_items (campaign_id, item_id, source_kind, source_id, vignette, prompt, choices_json, tags_json)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT(campaign_id, item_id) DO UPDATE SET
+                            source_kind = EXCLUDED.source_kind,
+                            source_id = EXCLUDED.source_id,
+                            vignette = EXCLUDED.vignette,
+                            prompt = EXCLUDED.prompt,
+                            choices_json = EXCLUDED.choices_json,
+                            tags_json = EXCLUDED.tags_json
+                        """,
+                        (
+                            campaign_id,
+                            item_id,
+                            item.get("sourceKind", "case"),
+                            item.get("sourceId", item_id),
+                            item.get("vignette", ""),
+                            item.get("prompt", ""),
+                            item.get("choicesJson", "[]"),
+                            item.get("tagsJson", "{}"),
+                        ),
+                    )
+                    
+                    # Also initialize question_stats
+                    conn.execute(
+                        """
+                        INSERT INTO question_stats (campaign_id, item_id, assigned_count, submitted_count)
+                        VALUES (?, ?, 0, 0)
+                        ON CONFLICT(campaign_id, item_id) DO NOTHING
+                        """ if not db.is_postgres else """
+                        INSERT INTO question_stats (campaign_id, item_id, assigned_count, submitted_count)
+                        VALUES (%s, %s, 0, 0)
+                        ON CONFLICT(campaign_id, item_id) DO NOTHING
+                        """,
+                        (campaign_id, item_id),
+                    )
+                    items_upserted += 1
+                
+                conn.commit()
+            
+            return Response(
+                json.dumps({"success": True, "itemsUpserted": items_upserted}),
+                status=200,
+                mimetype="application/json",
+            )
+        
+        except Exception as e:
+            return Response(
+                json.dumps({"error": str(e)}),
+                status=500,
+                mimetype="application/json",
+            )
+
+    @app.post("/api/railway/sync_campaign")
+    def railway_sync_campaign() -> Response:
+        """
+        API endpoint for creating campaign and invitations on Railway PostgreSQL.
+        Used by local admin UI to push online_assign campaigns.
+        """
+        auth_error = _require_railway_auth()
+        if auth_error:
+            return Response(json.dumps({"error": auth_error}), status=401, mimetype="application/json")
+        
+        try:
+            payload = request.get_json()
+            if not payload:
+                return Response(json.dumps({"error": "No JSON payload"}), status=400, mimetype="application/json")
+            
+            campaign_key = str(payload.get("campaignKey", "")).strip()
+            title = str(payload.get("title", "")).strip()
+            seed = int(payload.get("seed", 0))
+            questionnaire_version = int(payload.get("questionnaireVersion", 1))
+            picker_strategy = str(payload.get("pickerStrategy", "online_assign")).strip()
+            k = int(payload.get("k", 1))
+            layout_yaml = payload.get("layoutYaml", "")
+            recipients = payload.get("recipients", [])
+            
+            if not campaign_key or not title:
+                return Response(json.dumps({"error": "campaignKey and title required"}), status=400, mimetype="application/json")
+            if not isinstance(recipients, list):
+                return Response(json.dumps({"error": "recipients must be array"}), status=400, mimetype="application/json")
+            
+            with db.connect() as conn:
+                # Upsert campaign
+                campaign_id = upsert_campaign(
+                    conn,
+                    campaign_key=campaign_key,
+                    title=title,
+                    seed=seed,
+                    questionnaire_version=questionnaire_version,
+                )
+                
+                # Update campaign with picker_strategy and k
+                conn.execute(
+                    """
+                    UPDATE campaigns
+                    SET picker_strategy = ?, k = ?, layout_yaml = ?
+                    WHERE id = ?
+                    """ if not db.is_postgres else """
+                    UPDATE campaigns
+                    SET picker_strategy = %s, k = %s, layout_yaml = %s
+                    WHERE id = %s
+                    """,
+                    (picker_strategy, k, layout_yaml, campaign_id),
+                )
+                
+                # Create invitations for recipients
+                tokens: list[dict[str, str]] = []
+                for recipient in recipients:
+                    email = str(recipient.get("email", "")).strip().lower()
+                    if not email:
+                        continue
+                    
+                    # Generate token
+                    token = secrets.token_urlsafe(24)
+                    
+                    # Insert invitation (questionnaire_json will be filled on first access)
+                    conn.execute(
+                        """
+                        INSERT INTO invitations (campaign_id, email, token)
+                        VALUES (?, ?, ?)
+                        ON CONFLICT(campaign_id, email) DO UPDATE SET
+                            token = excluded.token
+                        """ if not db.is_postgres else """
+                        INSERT INTO invitations (campaign_id, email, token)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT(campaign_id, email) DO UPDATE SET
+                            token = EXCLUDED.token
+                        """,
+                        (campaign_id, email, token),
+                    )
+                    
+                    tokens.append({"email": email, "token": token})
+                
+                conn.commit()
+            
+            return Response(
+                json.dumps({
+                    "success": True,
+                    "campaignId": campaign_id,
+                    "invitationsCreated": len(tokens),
+                    "tokens": tokens,
+                }),
+                status=200,
+                mimetype="application/json",
+            )
+        
+        except Exception as e:
+            return Response(
+                json.dumps({"error": str(e)}),
+                status=500,
+                mimetype="application/json",
+            )
+
+    @app.post("/campaigns/<campaign_key>/railway/push")
+    def railway_push(campaign_key: str) -> Response:
+        """
+        UI route to push an online_assign campaign to Railway from local admin.
+        """
+        railway_base_url, railway_admin_token = get_railway_config()
+        if not railway_base_url or not railway_admin_token:
+            flash("Missing env vars: RAILWAY_APP_URL and RAILWAY_ADMIN_TOKEN are required.", "error")
+            return redirect(url_for("master_view", campaign_key=campaign_key))
+        
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            
+            if campaign["picker_strategy"] != "online_assign":
+                flash("Railway push is only for online_assign campaigns. Use Cloud push for pick_k_cases/template_expand.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+            
+            campaign_id = int(campaign["id"])
+            
+            # Step 1: Extract question items
+            question_items = list_question_items_with_stats(conn, campaign_id=campaign_id)
+            if not question_items:
+                flash("No question bank yet. Click 'Generate question bank' first.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+            
+            items_payload: list[dict[str, Any]] = []
+            for item in question_items:
+                items_payload.append({
+                    "itemId": item["item_id"],
+                    "sourceKind": item["source_kind"],
+                    "sourceId": item["source_id"],
+                    "vignette": item["vignette"],
+                    "prompt": item["prompt"],
+                    "choicesJson": item["choices_json"],
+                    "tagsJson": item["tags_json"],
+                })
+            
+            # Step 2: Push question bank
+            try:
+                resp1 = cloud_post_json(
+                    url=f"{railway_base_url}/api/railway/sync_question_bank",
+                    bearer_token=railway_admin_token,
+                    payload_obj={"campaignKey": campaign_key, "questionItems": items_payload},
+                )
+                if not resp1.get("success"):
+                    flash(f"Railway question bank push failed: {resp1.get('error', 'Unknown error')}", "error")
+                    return redirect(url_for("master_view", campaign_key=campaign_key))
+            except Exception as e:
+                flash(f"Railway question bank push failed: {e}", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+            
+            # Step 3: Extract recipients
+            recipients_list = list_pending_recipients_for_campaign(conn, campaign_id=campaign_id)
+            recipients_payload: list[dict[str, str]] = []
+            for r in recipients_list:
+                recipients_payload.append({"email": r["email"]})
+            
+            if not recipients_payload:
+                flash("No recipients to push. Import recipients first.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+            
+            # Step 4: Push campaign and invitations
+            try:
+                resp2 = cloud_post_json(
+                    url=f"{railway_base_url}/api/railway/sync_campaign",
+                    bearer_token=railway_admin_token,
+                    payload_obj={
+                        "campaignKey": campaign_key,
+                        "title": campaign["title"],
+                        "seed": int(campaign["seed"]),
+                        "questionnaireVersion": int(campaign["questionnaire_version"]),
+                        "pickerStrategy": campaign["picker_strategy"],
+                        "k": int(campaign.get("k", 1)),
+                        "layoutYaml": campaign.get("layout_yaml", ""),
+                        "recipients": recipients_payload,
+                    },
+                )
+                if not resp2.get("success"):
+                    flash(f"Railway campaign push failed: {resp2.get('error', 'Unknown error')}", "error")
+                    return redirect(url_for("master_view", campaign_key=campaign_key))
+                
+                # Save tokens to cloud_invitation_tokens table for tracking
+                tokens = resp2.get("tokens", [])
+                if tokens:
+                    insert_cloud_push(conn, campaign_id=campaign_id, cloud_base_url=railway_base_url, request_hash="railway_push")
+                    push_id = conn.execute("SELECT last_insert_rowid()" if not db.is_postgres else "SELECT currval(pg_get_serial_sequence('cloud_pushes', 'id'))").fetchone()[0]
+                    insert_cloud_push_tokens(conn, push_id=int(push_id), tokens_map={t["email"]: t["token"] for t in tokens})
+                    conn.commit()
+                
+                flash(
+                    f"Successfully pushed to Railway! {len(tokens)} invitations created. "
+                    f"Survey links: {railway_base_url}/s/<token>",
+                    "success",
+                )
+                log_event(conn, campaign=campaign, event="railway_push", success=True)
+            
+            except Exception as e:
+                flash(f"Railway campaign push failed: {e}", "error")
+                log_event(conn, campaign=campaign, event="railway_push", success=False, message=str(e))
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+        
+        return redirect(url_for("master_view", campaign_key=campaign_key))
 
 

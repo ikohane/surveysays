@@ -559,6 +559,46 @@
   </div>
 
   <div class="card">
+    <h3 style="margin-top:0;">Railway Deployment (for online_assign)</h3>
+    {% if campaign['picker_strategy'] != 'online_assign' %}
+      <div class="muted">
+        Railway deployment is only needed for <strong>online_assign</strong> campaigns.
+        Your campaign uses <strong>{{ campaign['picker_strategy'] }}</strong>, which works with Cloudflare push (above).
+      </div>
+    {% elif not railway_app_url %}
+      <div class="muted">
+        Not configured. Set <code>RAILWAY_APP_URL</code> and <code>RAILWAY_ADMIN_TOKEN</code> in your environment, then restart the local Admin server.
+      </div>
+    {% else %}
+      <div class="muted">
+        Target: <code>{{ railway_app_url }}</code> · API endpoints: <code>/api/railway/*</code>
+      </div>
+      <div class="muted" style="margin-top: 6px;">
+        Push question bank and campaign to Railway PostgreSQL. Recipients will access: <code>{{ railway_app_url }}/s/&lt;token&gt;</code>
+      </div>
+      <div style="height: 10px;"></div>
+      <div class="actions">
+        <form action="{{ url_for('railway_push', campaign_key=campaign['campaign_key']) }}" method="post">
+          <button type="submit">Push to Railway</button>
+        </form>
+      </div>
+      <div style="height: 10px;"></div>
+      <div class="muted">
+        This will:
+        <ul style="margin: 6px 0; padding-left: 20px;">
+          <li>Upload all question items from local database</li>
+          <li>Create campaign and invitations on Railway</li>
+          <li>Generate unique tokens for each recipient</li>
+          <li>Enable just-in-time assignment on Railway</li>
+        </ul>
+      </div>
+      <div class="muted" style="margin-top: 6px; padding: 10px; background: #fef3c7; border-radius: 6px;">
+        ⚠️ <strong>Note:</strong> Unlike Cloudflare push (for offline campaigns), Railway push is designed for <code>online_assign</code> where questions are assigned when recipients open their links.
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
     <h3 style="margin-top:0;">Layout (YAML)</h3>
     <div class="muted">
       Per-campaign layout config for respondent UI. This config is used locally and is pushed to Cloudflare as a parsed <code>layoutConfig</code>.

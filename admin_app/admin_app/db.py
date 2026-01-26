@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+import os
 import secrets
 import sqlite3
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Protocol
 
 from qgen.hashing import questionnaire_hash
 from qgen.contracts import CaseRow, RecipientRow
@@ -223,10 +224,246 @@ CREATE TABLE IF NOT EXISTS generation_waves (
 CREATE INDEX IF NOT EXISTS idx_generation_waves_campaign_id ON generation_waves(campaign_id);
 """
 
+# PostgreSQL-compatible schema (Railway deployment)
+SCHEMA_SQL_POSTGRES = """
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cloud_sync_state (
+  campaign_id INTEGER NOT NULL,
+  cloud_base_url TEXT NOT NULL,
+  last_synced_at TIMESTAMP,
+  PRIMARY KEY (campaign_id, cloud_base_url),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS campaigns (
+  id SERIAL PRIMARY KEY,
+  campaign_key TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  seed INTEGER NOT NULL,
+  questionnaire_version INTEGER NOT NULL,
+  picker_strategy TEXT NOT NULL DEFAULT 'pick_k_cases',
+  k INTEGER NOT NULL DEFAULT 1,
+  param_vector_json TEXT,
+  layout_yaml TEXT,
+  email_from TEXT,
+  email_subject TEXT,
+  email_html TEXT,
+  email_template_id TEXT,
+  email_base_url TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS invitations (
+  id SERIAL PRIMARY KEY,
+  campaign_id INTEGER NOT NULL,
+  email TEXT NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  questionnaire_json TEXT,
+  questionnaire_hash TEXT,
+  opened_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_invitations_campaign_id ON invitations(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email);
+CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_invitations_campaign_email ON invitations(campaign_id, email);
+
+CREATE TABLE IF NOT EXISTS templates (
+  id SERIAL PRIMARY KEY,
+  template_id TEXT NOT NULL UNIQUE,
+  vignette_template TEXT NOT NULL,
+  prompt_template TEXT NOT NULL,
+  choices_json TEXT NOT NULL,
+  tags_json TEXT NOT NULL,
+  rules_yaml TEXT NOT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS cases (
+  id SERIAL PRIMARY KEY,
+  case_id TEXT NOT NULL UNIQUE,
+  vignette TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  choices_json TEXT NOT NULL,
+  tags_json TEXT NOT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS recipients (
+  id SERIAL PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  strata_json TEXT NOT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS question_items (
+  id SERIAL PRIMARY KEY,
+  campaign_id INTEGER NOT NULL,
+  item_id TEXT NOT NULL,
+  source_kind TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  vignette TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  choices_json TEXT NOT NULL,
+  tags_json TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (campaign_id, item_id),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_question_items_campaign_id ON question_items(campaign_id);
+
+CREATE TABLE IF NOT EXISTS question_stats (
+  id SERIAL PRIMARY KEY,
+  campaign_id INTEGER NOT NULL,
+  item_id TEXT NOT NULL,
+  assigned_count INTEGER NOT NULL DEFAULT 0,
+  submitted_count INTEGER NOT NULL DEFAULT 0,
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (campaign_id, item_id),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_question_stats_campaign_id ON question_stats(campaign_id);
+
+CREATE TABLE IF NOT EXISTS respondent_assignments (
+  id SERIAL PRIMARY KEY,
+  campaign_id INTEGER NOT NULL,
+  token TEXT NOT NULL,
+  item_id TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (campaign_id, token, position),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_respondent_assignments_campaign_id ON respondent_assignments(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_respondent_assignments_token ON respondent_assignments(token);
+
+CREATE TABLE IF NOT EXISTS submissions (
+  id SERIAL PRIMARY KEY,
+  campaign_id INTEGER NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL,
+  answers_json TEXT NOT NULL,
+  submitted_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_submissions_campaign_id ON submissions(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_token ON submissions(token);
+
+CREATE TABLE IF NOT EXISTS submission_answers (
+  id SERIAL PRIMARY KEY,
+  campaign_id INTEGER NOT NULL,
+  token TEXT NOT NULL,
+  block_id TEXT NOT NULL,
+  block_type TEXT NOT NULL,
+  value_text TEXT,
+  value_choice_id TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (campaign_id, token, block_id),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_submission_answers_campaign_id ON submission_answers(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_submission_answers_token ON submission_answers(token);
+
+CREATE TABLE IF NOT EXISTS invitation_variants (
+  id SERIAL PRIMARY KEY,
+  campaign_id INTEGER NOT NULL,
+  email TEXT NOT NULL,
+  case_id TEXT NOT NULL,
+  questionnaire_json TEXT NOT NULL,
+  questionnaire_hash TEXT NOT NULL,
+  metadata_json TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_invitation_variants_campaign_id ON invitation_variants(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_invitation_variants_email ON invitation_variants(email);
+CREATE INDEX IF NOT EXISTS idx_invitation_variants_hash ON invitation_variants(questionnaire_hash);
+
+CREATE TABLE IF NOT EXISTS event_log (
+  id SERIAL PRIMARY KEY,
+  campaign_id INTEGER,
+  campaign_key TEXT,
+  event TEXT NOT NULL,
+  status TEXT NOT NULL CHECK(status IN ('success','failure')),
+  message TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_log_campaign_id ON event_log(campaign_id);
+
+CREATE TABLE IF NOT EXISTS campaign_recipient_exclusions (
+  id SERIAL PRIMARY KEY,
+  campaign_id INTEGER NOT NULL,
+  email TEXT NOT NULL,
+  excluded_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (campaign_id, email),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_campaign_recipient_exclusions_campaign_id ON campaign_recipient_exclusions(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_campaign_recipient_exclusions_email ON campaign_recipient_exclusions(email);
+
+CREATE TABLE IF NOT EXISTS generation_waves (
+  id SERIAL PRIMARY KEY,
+  campaign_id INTEGER NOT NULL,
+  wave_number INTEGER NOT NULL,
+  picker_strategy TEXT NOT NULL,
+  k INTEGER NOT NULL,
+  seed INTEGER NOT NULL,
+  recipients_processed INTEGER NOT NULL,
+  variants_created INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (campaign_id, wave_number),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_generation_waves_campaign_id ON generation_waves(campaign_id);
+
+CREATE TABLE IF NOT EXISTS cloud_invitation_tokens (
+  id SERIAL PRIMARY KEY,
+  campaign_id INTEGER NOT NULL,
+  cloud_base_url TEXT NOT NULL,
+  email TEXT NOT NULL,
+  cloud_token TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (campaign_id, cloud_base_url, email),
+  FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_cloud_invitation_tokens_campaign_id ON cloud_invitation_tokens(campaign_id);
+"""
+
+
+# Connection protocol for type hints
+class DbConnection(Protocol):
+    """Protocol for database connections (SQLite or PostgreSQL)."""
+    def execute(self, sql: str, parameters: tuple | list = ()) -> Any: ...
+    def executemany(self, sql: str, seq_of_parameters: Iterable[tuple | list]) -> Any: ...
+    def commit(self) -> None: ...
+    def rollback(self) -> None: ...
+    def close(self) -> None: ...
+    def __enter__(self) -> "DbConnection": ...
+    def __exit__(self, *args: Any) -> None: ...
+
 
 class Db:
+    """SQLite database handler for local development."""
     def __init__(self, db_path: str | Path):
         self.db_path = str(db_path)
+        self.is_postgres = False
 
     def connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
@@ -246,6 +483,55 @@ class Db:
             _ensure_cloud_tables(conn)
             _ensure_exclusions_table(conn)
             _ensure_generation_waves_table(conn)
+
+
+class PostgresDb:
+    """PostgreSQL database handler for Railway deployment."""
+    def __init__(self, database_url: str):
+        self.database_url = database_url
+        self.is_postgres = True
+        
+    def connect(self) -> Any:
+        """Create PostgreSQL connection with dict-like row factory."""
+        try:
+            import psycopg2
+            import psycopg2.extras
+        except ImportError:
+            raise ImportError("psycopg2 not installed. Run: pip install psycopg2-binary")
+        
+        conn = psycopg2.connect(self.database_url)
+        conn.cursor_factory = psycopg2.extras.RealDictCursor
+        return conn
+    
+    def init(self) -> None:
+        """Initialize PostgreSQL schema."""
+        with self.connect() as conn:
+            with conn.cursor() as cur:
+                # Execute schema in chunks (PostgreSQL doesn't support executescript)
+                for statement in SCHEMA_SQL_POSTGRES.split(';'):
+                    statement = statement.strip()
+                    if statement:
+                        cur.execute(statement)
+            conn.commit()
+
+
+def create_db_from_env() -> Db | PostgresDb:
+    """
+    Create appropriate database instance based on environment.
+    - If DATABASE_URL exists: Use PostgreSQL (Railway)
+    - Otherwise: Use SQLite (local development)
+    """
+    database_url = os.environ.get("DATABASE_URL", "").strip()
+    
+    if database_url:
+        # Railway/Production mode with PostgreSQL
+        return PostgresDb(database_url)
+    else:
+        # Local development mode with SQLite
+        from pathlib import Path
+        repo_root = Path(__file__).resolve().parents[2]
+        db_path = Path(os.environ.get("ADMIN_APP_DB", str(repo_root / "out" / "local_admin.sqlite3")))
+        return Db(db_path)
 
 
 def _try_add_column(conn: sqlite3.Connection, table: str, column_def: str) -> None:

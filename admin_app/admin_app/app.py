@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 
 from flask import Flask
 
-from .db import Db
+from .db import create_db_from_env
 from .routes.all_routes import register as register_all_routes
 
 
@@ -25,6 +25,7 @@ def create_app() -> Flask:
         # Common formats we emit/ingest:
         # - SQLite: "YYYY-MM-DD HH:MM:SS"
         # - Cloudflare D1: "YYYY-MM-DD HH:MM:SS.sss"
+        # - PostgreSQL: "YYYY-MM-DD HH:MM:SS.ssssss"
         for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
             try:
                 return datetime.strptime(s, fmt).replace(tzinfo=ZoneInfo("UTC"))
@@ -41,7 +42,7 @@ def create_app() -> Flask:
     def format_edt(value: Any) -> str:
         """
         Render timestamps in America/New_York.
-        Assumes naive SQL timestamps are UTC (SQLite CURRENT_TIMESTAMP, D1 strftime('now')).
+        Assumes naive SQL timestamps are UTC (SQLite CURRENT_TIMESTAMP, PostgreSQL NOW(), D1 strftime('now')).
         """
         if value is None:
             return ""
@@ -54,9 +55,10 @@ def create_app() -> Flask:
         local = dt.astimezone(tz_ny)
         return local.strftime("%Y-%m-%d %H:%M:%S %Z")
 
-    repo_root = Path(__file__).resolve().parents[2]
-    db_path = Path(os.environ.get("ADMIN_APP_DB", str(repo_root / "out" / "local_admin.sqlite3")))
-    db = Db(db_path)
+    # Create database instance based on environment
+    # - If DATABASE_URL exists: PostgreSQL (Railway)
+    # - Otherwise: SQLite (local)
+    db = create_db_from_env()
     db.init()
 
     # Register all routes on this app (keeps endpoint names stable without touching templates).

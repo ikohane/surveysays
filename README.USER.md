@@ -175,10 +175,11 @@ Click on your campaign name to open the campaign page.
 - Use this for: General surveys where order doesn't matter
 - Configuration: Set **K** = number of questions per recipient (e.g., 5)
 
-**Online Assign** (Advanced)
+**Online Assign** (Advanced - Requires Railway)
 - Questions assigned when recipient opens their link
 - Use this for: Balancing question distribution, adaptive testing
 - Configuration: Set **K** = number of questions per recipient
+- **Deployment**: Requires Railway.app for production (see [Railway Deployment Guide](docs/RAILWAY_DEPLOYMENT.md))
 
 **Template Expand** (Expert)
 - Questions generated from templates with variables
@@ -354,6 +355,63 @@ set CLOUDFLARE_ADMIN_TOKEN=your_admin_token_here
    - View results the same way (Results page)
    - Manual sync: Click **"Sync from Cloudflare Now"** on Master View
 
+### Railway Deployment (for online_assign)
+
+**When to use Railway:**
+- You're using the `online_assign` strategy
+- You want just-in-time question assignment
+- You need perfect question balance across respondents
+
+**Quick Setup:**
+
+1. **Deploy to Railway** (see [Railway Deployment Guide](docs/RAILWAY_DEPLOYMENT.md)):
+   - Connect your GitHub account to Railway
+   - Create new project from your SurveySays repo
+   - Add PostgreSQL database
+   - Railway auto-deploys from GitHub
+
+2. **Set Environment Variables** (on your computer):
+
+**On Mac/Linux:**
+```bash
+export RAILWAY_APP_URL='https://your-app.railway.app'
+export RAILWAY_ADMIN_TOKEN='your_railway_token_here'
+```
+
+**On Windows:**
+```cmd
+set RAILWAY_APP_URL=https://your-app.railway.app
+set RAILWAY_ADMIN_TOKEN=your_railway_token_here
+```
+
+3. **Push Campaign to Railway**:
+   - Create campaign with `online_assign` strategy
+   - Click **"Generate question bank"**
+   - On Master View, click **"Push to Railway"**
+   - This uploads question bank and creates invitations
+
+4. **Send Emails**:
+   - In Email Configuration, set **Base URL** to Railway URL
+   - e.g., `https://your-app.railway.app`
+   - Send emails as normal
+
+5. **Respondents Access**:
+   - Links: `https://your-app.railway.app/s/SECURE_TOKEN`
+   - Questions assigned when they open the link
+   - Perfect balance: least-assigned questions are chosen
+
+**Key Differences: Railway vs Cloudflare**
+
+| Feature | Railway (online_assign) | Cloudflare (offline) |
+|---------|------------------------|----------------------|
+| Strategy | `online_assign` only | `pick_k_cases`, `template_expand` |
+| Assignment | Just-in-time | Pre-generated |
+| Database | PostgreSQL | Cloudflare D1 |
+| Deployment | GitHub auto-deploy | Manual wrangler |
+| Best For | Balanced distribution | Large-scale surveys |
+
+**Full Guide:** [docs/RAILWAY_DEPLOYMENT.md](docs/RAILWAY_DEPLOYMENT.md)
+
 ---
 
 ## Configuration Reference
@@ -365,8 +423,10 @@ Set these BEFORE starting the admin app:
 | Variable | Required? | Purpose | Example |
 |----------|-----------|---------|---------|
 | `RESEND_API_KEY` | For email | Resend.com API key | `re_abc123...` |
-| `CLOUDFLARE_STUDY_BASE_URL` | For cloud mode | Your survey domain | `https://study.yourdomain.com` |
-| `CLOUDFLARE_ADMIN_TOKEN` | For cloud mode | API authentication | `long_random_string` |
+| `CLOUDFLARE_STUDY_BASE_URL` | For Cloudflare | Your survey domain | `https://study.yourdomain.com` |
+| `CLOUDFLARE_ADMIN_TOKEN` | For Cloudflare | API authentication | `long_random_string` |
+| `RAILWAY_APP_URL` | For Railway | Your Railway app URL | `https://your-app.railway.app` |
+| `RAILWAY_ADMIN_TOKEN` | For Railway | Railway API auth | `long_random_string` |
 | `ADMIN_MODE_DEFAULT` | Optional | Default mode on startup | `local` or `cloud` |
 | `PORT` | Optional | Admin app port | `5055` (default) |
 | `ADMIN_APP_DB` | Optional | Database location | `./out/local_admin.sqlite3` (default) |

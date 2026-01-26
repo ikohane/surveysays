@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
   "flask>=3.0.0",
   "certifi>=2024.0.0",
+  "psycopg2-binary>=2.9.9",
 ]
 license = {text = "MIT"}
 authors = [{name = "Isaac Kohane"}]
