@@ -1926,21 +1926,7 @@ def register(app: Flask, db: Db) -> None:
                     "tagsJson": item["tags_json"],
                 })
             
-            # Step 2: Push question bank
-            try:
-                resp1 = cloud_post_json(
-                    url=f"{railway_base_url}/api/railway/sync_question_bank",
-                    bearer_token=railway_admin_token,
-                    payload_obj={"campaignKey": campaign_key, "questionItems": items_payload},
-                )
-                if not resp1.get("success"):
-                    flash(f"Railway question bank push failed: {resp1.get('error', 'Unknown error')}", "error")
-                    return redirect(url_for("master_view", campaign_key=campaign_key))
-            except Exception as e:
-                flash(f"Railway question bank push failed: {e}", "error")
-                return redirect(url_for("master_view", campaign_key=campaign_key))
-            
-            # Step 3: Extract recipients
+            # Step 2: Extract recipients
             recipients_list = list_pending_recipients_for_campaign(conn, campaign_id=campaign_id)
             recipients_payload: list[dict[str, str]] = []
             for r in recipients_list:
@@ -1950,9 +1936,10 @@ def register(app: Flask, db: Db) -> None:
                 flash("No recipients to push. Import recipients first.", "error")
                 return redirect(url_for("master_view", campaign_key=campaign_key))
             
-            # Step 4: Push campaign and invitations
+            # Step 3: Push campaign metadata FIRST (creates campaign on Railway)
+            # This must happen before pushing question bank, since question bank requires campaign to exist
             try:
-                resp2 = cloud_post_json(
+                resp_campaign = cloud_post_json(
                     url=f"{railway_base_url}/api/railway/sync_campaign",
                     bearer_token=railway_admin_token,
                     payload_obj={
@@ -1966,29 +1953,42 @@ def register(app: Flask, db: Db) -> None:
                         "recipients": recipients_payload,
                     },
                 )
-                if not resp2.get("success"):
-                    flash(f"Railway campaign push failed: {resp2.get('error', 'Unknown error')}", "error")
+                if not resp_campaign.get("success"):
+                    flash(f"Railway campaign push failed: {resp_campaign.get('error', 'Unknown error')}", "error")
                     return redirect(url_for("master_view", campaign_key=campaign_key))
-                
-                # Save tokens to cloud_invitation_tokens table for tracking
-                tokens = resp2.get("tokens", [])
-                if tokens:
-                    insert_cloud_push(conn, campaign_id=campaign_id, cloud_base_url=railway_base_url, request_hash="railway_push")
-                    push_id = conn.execute("SELECT last_insert_rowid()" if not db.is_postgres else "SELECT currval(pg_get_serial_sequence('cloud_pushes', 'id'))").fetchone()[0]
-                    insert_cloud_push_tokens(conn, push_id=int(push_id), tokens_map={t["email"]: t["token"] for t in tokens})
-                    conn.commit()
-                
-                flash(
-                    f"Successfully pushed to Railway! {len(tokens)} invitations created. "
-                    f"Survey links: {railway_base_url}/s/<token>",
-                    "success",
-                )
-                log_event(conn, campaign=campaign, event="railway_push", success=True)
-            
             except Exception as e:
                 flash(f"Railway campaign push failed: {e}", "error")
                 log_event(conn, campaign=campaign, event="railway_push", success=False, message=str(e))
                 return redirect(url_for("master_view", campaign_key=campaign_key))
+            
+            # Step 4: Now push question bank (campaign exists on Railway now)
+            try:
+                resp_questions = cloud_post_json(
+                    url=f"{railway_base_url}/api/railway/sync_question_bank",
+                    bearer_token=railway_admin_token,
+                    payload_obj={"campaignKey": campaign_key, "questionItems": items_payload},
+                )
+                if not resp_questions.get("success"):
+                    flash(f"Railway question bank push failed: {resp_questions.get('error', 'Unknown error')}", "error")
+                    return redirect(url_for("master_view", campaign_key=campaign_key))
+            except Exception as e:
+                flash(f"Railway question bank push failed: {e}", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+            
+            # Save tokens to cloud_invitation_tokens table for tracking
+            tokens = resp_campaign.get("tokens", [])
+            if tokens:
+                insert_cloud_push(conn, campaign_id=campaign_id, cloud_base_url=railway_base_url, request_hash="railway_push")
+                push_id = conn.execute("SELECT last_insert_rowid()" if not db.is_postgres else "SELECT currval(pg_get_serial_sequence('cloud_pushes', 'id'))").fetchone()[0]
+                insert_cloud_push_tokens(conn, push_id=int(push_id), tokens_map={t["email"]: t["token"] for t in tokens})
+                conn.commit()
+            
+            flash(
+                f"Successfully pushed to Railway! Campaign + {resp_questions.get('itemsUpserted', 0)} questions + {len(tokens)} invitations created. "
+                f"Survey links: {railway_base_url}/s/<token>",
+                "success",
+            )
+            log_event(conn, campaign=campaign, event="railway_push", success=True)
         
         return redirect(url_for("master_view", campaign_key=campaign_key))
 
