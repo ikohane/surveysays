@@ -488,17 +488,26 @@ class Db:
 class PostgresConnectionWrapper:
     """
     Wrapper to make psycopg2 connections compatible with SQLite-style conn.execute().
+    Automatically translates SQLite '?' placeholders to PostgreSQL '%s' placeholders.
     """
     def __init__(self, conn: Any):
         self._conn = conn
         self._cursor: Any = None
+    
+    @staticmethod
+    def _translate_sql(sql: str) -> str:
+        """Convert SQLite-style ? placeholders to PostgreSQL-style %s."""
+        return sql.replace('?', '%s')
         
     def execute(self, sql: str, parameters: tuple | list = ()) -> Any:
         """Execute SQL and return cursor (compatible with SQLite interface)."""
         if self._cursor is None:
             import psycopg2.extras
             self._cursor = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        self._cursor.execute(sql, parameters)
+        
+        # Translate SQLite placeholders to PostgreSQL
+        pg_sql = self._translate_sql(sql)
+        self._cursor.execute(pg_sql, parameters)
         return self._cursor
     
     def executemany(self, sql: str, seq_of_parameters: Any) -> Any:
@@ -506,7 +515,10 @@ class PostgresConnectionWrapper:
         if self._cursor is None:
             import psycopg2.extras
             self._cursor = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        self._cursor.executemany(sql, seq_of_parameters)
+        
+        # Translate SQLite placeholders to PostgreSQL
+        pg_sql = self._translate_sql(sql)
+        self._cursor.executemany(pg_sql, seq_of_parameters)
         return self._cursor
     
     def commit(self) -> None:
