@@ -39,6 +39,7 @@ from ..db import (
     list_assignments_for_token,
     list_campaigns,
     list_cloud_invitation_ledger_rows,
+    list_cloud_invitation_tokens,
     list_cloud_latest_tokens,
     list_cloud_pushes,
     list_cloud_recent_submissions,
