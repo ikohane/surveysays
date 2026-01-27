@@ -79,11 +79,36 @@
     <h3 style="margin-top:0; color: #1e40af;">📋 Quick Workflow Guide</h3>
     <ol style="margin: 10px 0; padding-left: 20px; line-height: 1.8;">
       <li>Upload your questions and recipients (see Data Management below)</li>
-      <li>Generate questions: Click "Generate Wave" button below</li>
+      <li>Generate questions: Click "Generate Questions" button below</li>
       <li>Configure email settings (see Email Settings below)</li>
-      <li>Push to cloud (see Cloudflare/Railway sections below)</li>
+      <li>Push to cloud (see Cloud Deployment below)</li>
       <li>Send emails to recipients</li>
     </ol>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Generate Questions</h3>
+    <div class="muted">
+      Status: <strong>{{ recipients_with_variants }}</strong> of <strong>{{ recipients_n }}</strong> recipients have questions ready
+    </div>
+    <div style="height: 10px;"></div>
+    
+    <form action="{{ url_for('generate_variants', campaign_key=campaign['campaign_key']) }}" method="post">
+      <button type="submit" {% if pending_recipients == 0 %}disabled{% endif %}>
+        {% if pending_recipients > 0 %}
+          Generate Questions for {{ pending_recipients }} Recipients
+        {% else %}
+          All Recipients Have Questions
+        {% endif %}
+      </button>
+    </form>
+    
+    {% if pending_recipients == 0 and recipients_n > 0 %}
+      <div style="height: 10px;"></div>
+      <div class="muted" style="padding: 10px; background: #dcfce7; border-radius: 6px;">
+        ✓ Questions generated successfully! You can now configure email settings and push to cloud.
+      </div>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -382,6 +407,59 @@
   {% endif %}
 
   <div class="card">
+    <h3 style="margin-top:0;">Data Management (Global)</h3>
+    <div class="muted">
+      Import cases, recipients, and templates. These are shared across all campaigns.
+      After importing new recipients, generate a new wave below.
+    </div>
+    <div style="height: 12px;"></div>
+    <div class="row">
+      <div class="card" style="margin:0;">
+        <h4 style="margin-top:0;">Import Cases</h4>
+        <form action="{{ url_for('import_cases') }}" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="campaign_key" value="{{ campaign['campaign_key'] }}" />
+          <label>cases.csv</label>
+          <input type="file" name="file" accept=".csv,text/csv" required />
+          <div style="height: 8px;"></div>
+          <label style="display:flex; gap:8px; align-items:center;">
+            <input type="checkbox" name="replace_existing" value="1" checked />
+            Replace existing
+          </label>
+          <div style="height: 8px;"></div>
+          <button class="secondary" type="submit">Import Cases</button>
+        </form>
+      </div>
+
+      <div class="card" style="margin:0;">
+        <h4 style="margin-top:0;">Import Recipients</h4>
+        <form action="{{ url_for('import_recipients') }}" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="campaign_key" value="{{ campaign['campaign_key'] }}" />
+          <label>recipients.csv</label>
+          <input type="file" name="file" accept=".csv,text/csv" required />
+          <div style="height: 8px;"></div>
+          <label style="display:flex; gap:8px; align-items:center;">
+            <input type="checkbox" name="replace_existing" value="1" />
+            Replace existing (uncheck to add new)
+          </label>
+          <div style="height: 8px;"></div>
+          <button class="secondary" type="submit">Import Recipients</button>
+        </form>
+      </div>
+
+      <div class="card" style="margin:0;">
+        <h4 style="margin-top:0;">Import Templates</h4>
+        <form action="{{ url_for('import_templates') }}" method="post" enctype="multipart/form-data">
+          <input type="hidden" name="campaign_key" value="{{ campaign['campaign_key'] }}" />
+          <label>templates.csv</label>
+          <input type="file" name="file" accept=".csv,text/csv" required />
+          <div style="height: 8px;"></div>
+          <button class="secondary" type="submit">Import Templates</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
     <h3 style="margin-top:0;">Email (Resend) settings</h3>
     <div class="muted">
       Emails will be sent to the actual recipient addresses. Use <code>{% raw %}{{{RECIPIENT_EMAIL}}}{% endraw %}</code> in templates to show the recipient's email.
@@ -397,7 +475,15 @@
       <div class="row">
         <div>
           <label>email_from</label>
-          <input type="text" name="email_from" value="{{ campaign['email_from'] or '' }}" placeholder="Name <sender@domain>" />
+          {% if ui_mode == 'basic' %}
+            <select name="email_from" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 8px;">
+              <option value="zak@study.hvp.global" {% if campaign['email_from'] == 'zak@study.hvp.global' %}selected{% endif %}>zak@study.hvp.global</option>
+              <option value="payal@study.hvp.global" {% if campaign['email_from'] == 'payal@study.hvp.global' %}selected{% endif %}>payal@study.hvp.global</option>
+              <option value="info@study.hvp.global" {% if campaign['email_from'] == 'info@study.hvp.global' %}selected{% endif %}>info@study.hvp.global</option>
+            </select>
+          {% else %}
+            <input type="text" name="email_from" value="{{ campaign['email_from'] or '' }}" placeholder="Name <sender@domain>" />
+          {% endif %}
         </div>
         <div>
           <label>email_subject</label>
@@ -408,7 +494,11 @@
       <div class="row">
         <div>
           <label>email_base_url</label>
-          <input type="text" name="email_base_url" value="{{ campaign['email_base_url'] or 'http://127.0.0.1:5055' }}" />
+          {% if campaign['picker_strategy'] == 'online_assign' %}
+            <input type="text" name="email_base_url" value="{{ campaign['email_base_url'] or railway_app_url or 'http://127.0.0.1:5055' }}" />
+          {% else %}
+            <input type="text" name="email_base_url" value="{{ campaign['email_base_url'] or cloud_base_url or 'http://127.0.0.1:5055' }}" />
+          {% endif %}
           <div class="muted" style="margin-top: 6px;">Links will be <code>{{ campaign['email_base_url'] or 'http://127.0.0.1:5055' }}/s/&lt;token&gt;</code></div>
         </div>
       </div>
@@ -497,59 +587,6 @@
     </div>
   </div>
   {% endif %}
-
-  <div class="card">
-    <h3 style="margin-top:0;">Data Management (Global)</h3>
-    <div class="muted">
-      Import cases, recipients, and templates. These are shared across all campaigns.
-      After importing new recipients, generate a new wave below.
-    </div>
-    <div style="height: 12px;"></div>
-    <div class="row">
-      <div class="card" style="margin:0;">
-        <h4 style="margin-top:0;">Import Cases</h4>
-        <form action="{{ url_for('import_cases') }}" method="post" enctype="multipart/form-data">
-          <input type="hidden" name="campaign_key" value="{{ campaign['campaign_key'] }}" />
-          <label>cases.csv</label>
-          <input type="file" name="file" accept=".csv,text/csv" required />
-          <div style="height: 8px;"></div>
-          <label style="display:flex; gap:8px; align-items:center;">
-            <input type="checkbox" name="replace_existing" value="1" checked />
-            Replace existing
-          </label>
-          <div style="height: 8px;"></div>
-          <button class="secondary" type="submit">Import Cases</button>
-        </form>
-      </div>
-
-      <div class="card" style="margin:0;">
-        <h4 style="margin-top:0;">Import Recipients</h4>
-        <form action="{{ url_for('import_recipients') }}" method="post" enctype="multipart/form-data">
-          <input type="hidden" name="campaign_key" value="{{ campaign['campaign_key'] }}" />
-          <label>recipients.csv</label>
-          <input type="file" name="file" accept=".csv,text/csv" required />
-          <div style="height: 8px;"></div>
-          <label style="display:flex; gap:8px; align-items:center;">
-            <input type="checkbox" name="replace_existing" value="1" />
-            Replace existing (uncheck to add new)
-          </label>
-          <div style="height: 8px;"></div>
-          <button class="secondary" type="submit">Import Recipients</button>
-        </form>
-      </div>
-
-      <div class="card" style="margin:0;">
-        <h4 style="margin-top:0;">Import Templates</h4>
-        <form action="{{ url_for('import_templates') }}" method="post" enctype="multipart/form-data">
-          <input type="hidden" name="campaign_key" value="{{ campaign['campaign_key'] }}" />
-          <label>templates.csv</label>
-          <input type="file" name="file" accept=".csv,text/csv" required />
-          <div style="height: 8px;"></div>
-          <button class="secondary" type="submit">Import Templates</button>
-        </form>
-      </div>
-    </div>
-  </div>
 
   <div class="card">
     <h3 style="margin-top:0;">{% if ui_mode == 'basic' %}Recipient Status{% else %}Invites ledger (all recipients){% endif %}</h3>
