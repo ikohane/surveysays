@@ -468,7 +468,7 @@ class Db:
     def connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON;")
+        conn.execute("PRAGMA foreign_keys = ON;")  # SQLite only
         return conn
 
     def init(self) -> None:
@@ -485,6 +485,62 @@ class Db:
             _ensure_generation_waves_table(conn)
 
 
+class PostgresCursor:
+    """Cursor wrapper to add SQLite-compatible lastrowid property."""
+    def __init__(self, cursor: Any, conn: Any):
+        self._cursor = cursor
+        self._conn = conn
+        self._lastrowid: int | None = None
+    
+    def __getattr__(self, name: str) -> Any:
+        """Delegate all other attributes to the real cursor."""
+        return getattr(self._cursor, name)
+    
+    @property
+    def lastrowid(self) -> int:
+        """Get last inserted row ID (SQLite compatibility)."""
+        if self._lastrowid is not None:
+            return self._lastrowid
+        # PostgreSQL doesn't have lastrowid, return 0 as fallback
+        return 0
+    
+    def execute(self, sql: str, parameters: Any = None) -> "PostgresCursor":
+        """Execute and capture lastrowid if INSERT."""
+        sql_upper = sql.strip().upper()
+        
+        # For INSERT statements in PostgreSQL, add RETURNING id to get lastrowid
+        if sql_upper.startswith('INSERT') and 'RETURNING' not in sql_upper:
+            # Add RETURNING id to capture the inserted ID
+            sql = sql.rstrip().rstrip(';') + ' RETURNING id'
+        
+        self._cursor.execute(sql, parameters)
+        
+        # Try to get the inserted ID if this was an INSERT
+        if sql_upper.startswith('INSERT') and self._cursor.rowcount > 0:
+            try:
+                if self._cursor.description:
+                    row = self._cursor.fetchone()
+                    if row:
+                        # Try different ways to access the id
+                        if hasattr(row, 'get') and callable(row.get):
+                            self._lastrowid = row.get('id', 0)
+                        elif hasattr(row, '__getitem__'):
+                            try:
+                                self._lastrowid = row['id']
+                            except (KeyError, IndexError):
+                                self._lastrowid = row[0] if len(row) > 0 else 0
+                        else:
+                            self._lastrowid = row.id if hasattr(row, 'id') else 0
+            except Exception:
+                self._lastrowid = 0
+        return self
+    
+    def executemany(self, sql: str, parameters: Any) -> "PostgresCursor":
+        """Execute many."""
+        self._cursor.executemany(sql, parameters)
+        return self
+
+
 class PostgresConnectionWrapper:
     """
     Wrapper to make psycopg2 connections compatible with SQLite-style conn.execute().
@@ -497,13 +553,27 @@ class PostgresConnectionWrapper:
     @staticmethod
     def _translate_sql(sql: str) -> str:
         """Convert SQLite-style ? placeholders to PostgreSQL-style %s."""
+        # Skip PRAGMA statements (SQLite-specific)
+        if sql.strip().upper().startswith('PRAGMA'):
+            return sql  # Will be handled in execute()
         return sql.replace('?', '%s')
         
     def execute(self, sql: str, parameters: tuple | list = ()) -> Any:
         """Execute SQL and return cursor (compatible with SQLite interface)."""
+        # Skip PRAGMA statements (PostgreSQL doesn't have them)
+        if sql.strip().upper().startswith('PRAGMA'):
+            # Return a dummy cursor-like object
+            class DummyCursor:
+                def fetchall(self): return []
+                def fetchone(self): return None
+                @property
+                def lastrowid(self): return 0
+            return DummyCursor()
+        
         if self._cursor is None:
             import psycopg2.extras
-            self._cursor = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            real_cursor = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            self._cursor = PostgresCursor(real_cursor, self._conn)
         
         # Translate SQLite placeholders to PostgreSQL
         pg_sql = self._translate_sql(sql)
@@ -514,7 +584,8 @@ class PostgresConnectionWrapper:
         """Execute SQL with multiple parameter sets."""
         if self._cursor is None:
             import psycopg2.extras
-            self._cursor = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            real_cursor = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            self._cursor = PostgresCursor(real_cursor, self._conn)
         
         # Translate SQLite placeholders to PostgreSQL
         pg_sql = self._translate_sql(sql)
