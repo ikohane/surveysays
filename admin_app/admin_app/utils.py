@@ -123,6 +123,7 @@ def cloud_post_json(*, url: str, bearer_token: str, payload_obj: Any, timeout_se
             "Authorization": f"Bearer {bearer_token}",
             "Content-Type": "application/json",
             "Accept": "application/json",
+            "User-Agent": "SurveySays-Admin/1.0",
         },
     )
     try:
@@ -158,6 +159,7 @@ def cloud_get_json(*, url: str, bearer_token: str, timeout_sec: int = 30) -> dic
         headers={
             "Authorization": f"Bearer {bearer_token}",
             "Accept": "application/json",
+            "User-Agent": "SurveySays-Admin/1.0",
         },
     )
     try:
