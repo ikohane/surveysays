@@ -74,6 +74,19 @@
     {% endif %}
   </div>
 
+  {% if ui_mode == 'basic' %}
+  <div class="card" style="background: #eff6ff; border-color: #3b82f6;">
+    <h3 style="margin-top:0; color: #1e40af;">📋 Quick Workflow Guide</h3>
+    <ol style="margin: 10px 0; padding-left: 20px; line-height: 1.8;">
+      <li>Upload your questions and recipients (see Data Management below)</li>
+      <li>Generate questions: Click "Generate Wave" button below</li>
+      <li>Configure email settings (see Email Settings below)</li>
+      <li>Push to cloud (see Cloudflare/Railway sections below)</li>
+      <li>Send emails to recipients</li>
+    </ol>
+  </div>
+  {% endif %}
+
   <div class="card">
     <h3 style="margin-top:0;">Variant Generation Waves</h3>
     <div class="muted">
