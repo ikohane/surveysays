@@ -574,7 +574,7 @@
 &lt;/div&gt;{% endraw %}</pre>
       </details>
       {% if ui_mode == 'basic' and not campaign['email_html'] %}
-      <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{% raw %}<div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6;">
+      <textarea id="email_html_field" name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{% raw %}<div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6;">
   <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Research Study Invitation</h1>
   </div>
@@ -609,11 +609,66 @@
   </div>
 </div>{% endraw %}</textarea>
       {% else %}
-      <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ campaign['email_html'] or '' }}</textarea>
+      <textarea id="email_html_field" name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ campaign['email_html'] or '' }}</textarea>
       {% endif %}
+      
+      {# Email Preview Section #}
+      <div style="height: 16px;"></div>
+      <details open style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #f9fafb;">
+        <summary style="cursor: pointer; font-weight: 600; color: #374151; margin-bottom: 10px;">📧 Email Preview</summary>
+        <div style="margin-top: 10px;">
+          <div class="muted" style="margin-bottom: 10px; font-size: 13px;">
+            Preview shows how your email will look with example values. 
+            {% if ui_mode == 'basic' %}Click "Update Preview" after editing the HTML.{% else %}Variables are replaced with sample data.{% endif %}
+          </div>
+          <div style="background: white; border: 2px solid #e5e7eb; border-radius: 8px; padding: 20px; min-height: 200px;">
+            <div id="email_preview_content">
+              {% if campaign['email_html'] %}
+                {% set preview_html = campaign['email_html']
+                  .replace('{{{RECIPIENT_FIRST_NAME}}}', 'Alice')
+                  .replace('{{{RECIPIENT_LAST_NAME}}}', 'Smith')
+                  .replace('{{{CAMPAIGN_TITLE}}}', campaign['title'] or campaign['campaign_key'])
+                  .replace('{{{RECIPIENT_EMAIL}}}', 'alice@example.com')
+                  .replace('{{{SURVEY_LINK}}}', (campaign['email_base_url'] or 'https://example.com') + '/s/SAMPLE-TOKEN') %}
+                {{ preview_html|safe }}
+              {% else %}
+                <div class="muted" style="text-align: center; padding: 40px;">
+                  No email template yet. Add HTML above and save to see preview.
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          <div style="height: 10px;"></div>
+          <button type="button" class="secondary" onclick="updateEmailPreview()">Update Preview</button>
+        </div>
+      </details>
+      
       <div style="height: 10px;"></div>
       <button class="secondary" type="submit">Save email settings</button>
     </form>
+    
+    <script>
+      function updateEmailPreview() {
+        const textarea = document.getElementById('email_html_field');
+        if (!textarea) return;
+        
+        let html = textarea.value;
+        const baseUrl = document.querySelector('input[name="email_base_url"]')?.value || 'https://example.com';
+        const campaignTitle = '{{ campaign["title"] or campaign["campaign_key"] }}';
+        
+        // Replace variables with example values
+        html = html.replace(/\{\{\{RECIPIENT_FIRST_NAME\}\}\}/g, 'Alice');
+        html = html.replace(/\{\{\{RECIPIENT_LAST_NAME\}\}\}/g, 'Smith');
+        html = html.replace(/\{\{\{CAMPAIGN_TITLE\}\}\}/g, campaignTitle);
+        html = html.replace(/\{\{\{RECIPIENT_EMAIL\}\}\}/g, 'alice@example.com');
+        html = html.replace(/\{\{\{SURVEY_LINK\}\}\}/g, baseUrl + '/s/SAMPLE-TOKEN');
+        
+        const preview = document.getElementById('email_preview_content');
+        if (preview) {
+          preview.innerHTML = html;
+        }
+      }
+    </script>
     {% if ui_mode == 'expert' and campaign['picker_strategy'] != 'online_assign' %}
       <div style="height: 10px;"></div>
       <form action="{{ url_for('send_emails', campaign_key=campaign['campaign_key']) }}" method="post">
