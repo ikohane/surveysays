@@ -1989,7 +1989,13 @@ def register(app: Flask, db: Db) -> None:
             # Save tokens to cloud_invitation_tokens table for tracking
             tokens = resp_campaign.get("tokens", [])
             if tokens:
-                insert_cloud_push(conn, campaign_id=campaign_id, cloud_base_url=railway_base_url, request_hash="railway_push")
+                insert_cloud_push(
+                    conn, 
+                    campaign_id=campaign_id, 
+                    cloud_base_url=railway_base_url, 
+                    request_hash="railway_push",
+                    response_json=json.dumps(resp_campaign, ensure_ascii=False)
+                )
                 push_id = conn.execute("SELECT last_insert_rowid()" if not db.is_postgres else "SELECT currval(pg_get_serial_sequence('cloud_pushes', 'id'))").fetchone()[0]
                 insert_cloud_push_tokens(conn, push_id=int(push_id), tokens_map={t["email"]: t["token"] for t in tokens})
                 conn.commit()
