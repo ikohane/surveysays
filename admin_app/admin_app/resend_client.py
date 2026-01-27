@@ -232,6 +232,31 @@ def create_or_update_campaign_template(*, campaign_key: str, template_id: str | 
     return new_id
 
 
+def send_email(*, from_email: str, to_email: str, subject: str, html: str, text: str | None = None) -> dict[str, Any]:
+    """
+    Send a single email directly without using templates.
+    
+    Args:
+        from_email: Sender email address (must be from verified domain)
+        to_email: Recipient email address
+        subject: Email subject line
+        html: HTML email body
+        text: Optional plain text email body (auto-generated if not provided)
+    
+    Returns:
+        Response dict with email ID
+    """
+    payload: dict[str, Any] = {
+        "from": from_email,
+        "to": [to_email],
+        "subject": subject,
+        "html": html,
+    }
+    if text:
+        payload["text"] = text
+    return _request_json(method="POST", path="/emails", body=payload)
+
+
 def send_email_with_template(*, to_email: str, template_id: str, variables: dict[str, Any]) -> dict[str, Any]:
     payload = {"to": [to_email], "template_id": template_id, "variables": variables}
     # Some Resend accounts accept template as {id, variables}; others accept template_id + variables.

@@ -19,7 +19,22 @@ from pathlib import Path
 def main() -> None:
     repo = Path(__file__).resolve().parents[2]
     
-    # Always run integration test (no server needed)
+    # Always run schema conformance test first (no dependencies)
+    print("=" * 60)
+    print("Running schema conformance test...")
+    print("=" * 60)
+    result = subprocess.run(
+        [sys.executable, str(repo / "admin_app" / "scripts" / "test_schema_conformance.py")],
+        cwd=str(repo),
+        env={**__import__("os").environ, "PYTHONPATH": f"{repo}:{repo / 'qgen'}"},
+    )
+    if result.returncode != 0:
+        print("\n❌ Schema conformance test FAILED")
+        print("Fix schema inconsistencies before continuing.")
+        sys.exit(1)
+    print("✓ Schema conformance test passed\n")
+    
+    # Run integration test
     print("=" * 60)
     print("Running integration test...")
     print("=" * 60)

@@ -1,0 +1,7 @@
+RESEND_API_KEY=re_ZzbSWLv5_4YYymbJiUkvmnjkGjnksou8K
+ADMIN_TOKEN=3DvCmFKb3P02qGK9eeNTizeENC-aEuU9NbLNdIdYKtk
+CLOUDFLARE_STUDY_BASE_URL=https://study-staging.hvp.global
+CLOUDFLARE_ADMIN_TOKEN=3DvCmFKb3P02qGK9eeNTizeENC-aEuU9NbLNdIdYKtk
+# Railway deployment for online_assign campaigns
+RAILWAY_APP_URL=https://surveysays-production.up.railway.app
+RAILWAY_ADMIN_TOKEN=k0uVtZ999wNs-LUv6LU7cijcdFzl392KQe11_evADws

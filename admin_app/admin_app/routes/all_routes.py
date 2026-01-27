@@ -2072,55 +2072,45 @@ def register(app: Flask, db: Db) -> None:
                 flash("Missing email settings. Configure in Master → Email Settings.", "error")
                 return redirect(url_for("master_view", campaign_key=campaign_key))
             
-            # Create or update Resend template
-            try:
-                try:
-                    template_id = str(campaign["email_template_id"]) if campaign["email_template_id"] else ""
-                except (KeyError, TypeError):
-                    template_id = ""
-                template_id = create_or_update_campaign_template(
-                    campaign_key=campaign_key,
-                    template_id=template_id if template_id else None,
-                    from_email=email_from,
-                    subject=email_subject,
-                    html=email_html,
-                )
-            except ResendError as e:
-                flash(f"Resend error creating/updating template: {e}", "error")
-                log_event(conn, campaign=campaign, event="railway_send_emails", success=False, message=f"Template error: {e}")
-                return redirect(url_for("master_view", campaign_key=campaign_key))
-            
-            # Save template ID
-            conn.execute(
-                "UPDATE campaigns SET email_template_id = ? WHERE campaign_key = ?",
-                (template_id, campaign_key),
-            )
-            conn.commit()
-            
             # Get recipient names
             name_map = recipient_name_map(conn, emails=[str(t["email"]) for t in cloud_tokens])
-            
-            # Prepare invitation list
-            invitations = []
-            for t in cloud_tokens:
-                email = str(t["email"])
-                names = name_map.get(email) or {}
-                invitations.append({
-                    "email": email,
-                    "token": str(t["cloud_token"]),
-                    "first_name": names.get("firstname", ""),
-                    "last_name": names.get("lastname", ""),
-                })
         
-        # Send emails (with testing override)
+        # Send emails directly (without templates) - with testing override
+        from admin_app.resend_client import send_email
+        import time
+        
+        sends = []
         try:
-            sends = send_invites_for_campaign(
-                template_id=template_id,
-                campaign_title=str(campaign["title"]),
-                base_url=railway_base_url,
-                invitations=invitations,
-                email_override=EMAIL_TESTING_OVERRIDE,  # ALL emails go to kohane@gmail.com
-            )
+            for t in cloud_tokens:
+                intended_email = str(t["email"])
+                token = str(t["cloud_token"])
+                names = name_map.get(intended_email) or {}
+                first_name = names.get("firstname", "")
+                last_name = names.get("lastname", "")
+                survey_link = railway_base_url.rstrip("/") + f"/s/{token}"
+                
+                # Replace variables in email HTML
+                personalized_html = email_html
+                personalized_html = personalized_html.replace("{{{SURVEY_LINK}}}", survey_link)
+                personalized_html = personalized_html.replace("{{{CAMPAIGN_TITLE}}}", str(campaign["title"]))
+                personalized_html = personalized_html.replace("{{{RECIPIENT_EMAIL}}}", intended_email)
+                personalized_html = personalized_html.replace("{{{RECIPIENT_FIRST_NAME}}}", first_name)
+                personalized_html = personalized_html.replace("{{{RECIPIENT_LAST_NAME}}}", last_name)
+                
+                # Use override email for actual delivery
+                actual_to_email = EMAIL_TESTING_OVERRIDE if EMAIL_TESTING_OVERRIDE else intended_email
+                
+                # Send email
+                resp = send_email(
+                    from_email=email_from,
+                    to_email=actual_to_email,
+                    subject=email_subject,
+                    html=personalized_html,
+                )
+                sends.append(resp)
+                
+                # Rate limiting (0.8 emails per second)
+                time.sleep(1.25)
         except ResendError as e:
             flash(f"Resend send error: {e}", "error")
             with db.connect() as log_conn:

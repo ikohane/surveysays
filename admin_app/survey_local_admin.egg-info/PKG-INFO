@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: survey-local-admin
+Version: 0.1.0
+Summary: Local Admin web app for importing cases/recipients and generating per-recipient questionnaire variants.
+Author: Isaac Kohane
+License: MIT
+Requires-Python: >=3.11
+Requires-Dist: flask>=3.0.0
+Requires-Dist: certifi>=2024.0.0
+Requires-Dist: psycopg2-binary>=2.9.9

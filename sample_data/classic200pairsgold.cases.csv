@@ -1,0 +1,601 @@
+case_id,vignette,prompt,choice_A,choice_B,choice_C,choice_D,tags
+case_001,"Age: 28, Sex: Male, Status: Healthy
+
+Age: 78, Sex: Female, Disease: delirium tremens, Findings: confusion, tremors, Treatment: benzodiazepines",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_002,"Age: 76, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy
+
+Age: 28, Sex: Male, Disease: Gastroesophageal Reflux Disease (GERD), Conditions: Heartburn, Acid reflux, Treatment: Omeprazole, Ranitidine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_003,"Age: 40, Sex: Male, Status: Healthy
+
+Age: 49, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_004,"Age: 58, Sex: Female, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 22, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_005,"Age: 39, Sex: Male, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 42, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_006,"Age: 43, Sex: Male, Status: Healthy
+
+Age: 59, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_007,"Age: 71, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 29, Sex: Male, Disease: Gastroesophageal Reflux Disease (GERD), Conditions: Heartburn, Acid reflux, Treatment: Omeprazole, Ranitidine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_008,"Age: 41, Sex: Male, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 60, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_009,"Age: 72, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol
+
+Age: 49, Sex: Male, Disease: Prostate Cancer, Conditions: Difficulty urinating, Bone pain, Erectile dysfunction, Treatment: Leuprolide, Docetaxel",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_010,"Age: 27, Sex: Female, Disease: facial acne, Findings: pustules, topical antibiotics, Treatment: benzoyl peroxide
+
+Age: 28, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_011,"Age: 19, Sex: Female, Disease: Polycystic Ovary Syndrome (PCOS), Conditions: Irregular periods, Excess androgen, Polycystic ovaries, Treatment: Metformin, Birth control pills
+
+Age: 51, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_012,"Age: 30, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 40, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_013,"Age: 57, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 25, Sex: Male, Disease: facial acne, Findings: pustules, topical antibiotics, Treatment: benzoyl peroxide",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_014,"Age: 74, Sex: Female, Disease: delirium tremens, Findings: confusion, tremors, Treatment: benzodiazepines
+
+Age: 40, Sex: Female, Disease: Endometriosis, Conditions: Pelvic pain, Menstrual cramps, Infertility, Treatment: Gonadotropin-releasing hormone (GnRH) agonists",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_015,"Age: 42, Sex: Female, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 16, Sex: Male, Disease: Conjunctivitis, Conditions: Red eyes, Eye discharge, Treatment: Antibiotic eye drops",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_016,"Age: 46, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 69, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_017,"Age: 51, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 59, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_018,"Age: 57, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 18, Sex: Male, Disease: otitis media, Findings: fever of 100.4F, ear pain, Treatment: antibiotics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_019,"Age: 47, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 57, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_020,"Age: 53, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 17, Sex: Male, Disease: Conjunctivitis, Conditions: Red eyes, Eye discharge, Treatment: Antibiotic eye drops",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_021,"Age: 43, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole
+
+Age: 71, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_022,"Age: 61, Sex: Female, Disease: seizure, Findings: confusion, headache,Treatment: antiepileptics
+
+Age: 41, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_023,"Age: 41, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol
+
+Age: 41, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_024,"Age: 51, Sex: Female, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics
+
+Age: 66, Sex: Male, Disease: Prostate Cancer, Conditions: Difficulty urinating, Bone pain, Erectile dysfunction, Treatment: Leuprolide, Docetaxel",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_025,"Age: 37, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 28, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_026,"Age: 51, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 35, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_027,"Age: 71, Sex: Female, Status: Healthy
+
+Age: 53, Sex: Male, Disease: Prostate Cancer, Conditions: Difficulty urinating, Bone pain, Erectile dysfunction, Treatment: Leuprolide, Docetaxel",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_028,"Age: 51, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 59, Sex: Male, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_029,"Age: 42, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 74, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_030,"Age: 28, Sex: Male, Disease: otitis media, Findings: fever of 100.4F, ear pain, Treatment: antibiotics
+
+Age: 38, Sex: Male, Disease: Gastroesophageal Reflux Disease (GERD), Conditions: Heartburn, Acid reflux, Treatment: Omeprazole, Ranitidine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_031,"Age: 49, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 55, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_032,"Age: 57, Sex: Female, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 31, Sex: Male, Disease: Gastroesophageal Reflux Disease (GERD), Conditions: Heartburn, Acid reflux, Treatment: Omeprazole, Ranitidine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_033,"Age: 54, Sex: Male, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 39, Sex: Female, Disease: Endometriosis, Conditions: Pelvic pain, Menstrual cramps, Infertility, Treatment: Gonadotropin-releasing hormone (GnRH) agonists",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_034,"Age: 62, Sex: Female, Status: Healthy
+
+Age: 76, Sex: Male, Disease: Prostate Cancer, Conditions: Difficulty urinating, Bone pain, Erectile dysfunction, Treatment: Leuprolide, Docetaxel",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_035,"Age: 44, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy
+
+Age: 80, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_036,"Age: 38, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors
+
+Age: 49, Sex: Male, Disease: Prostate Cancer, Conditions: Difficulty urinating, Bone pain, Erectile dysfunction, Treatment: Leuprolide, Docetaxel",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_037,"Age: 49, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 58, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_038,"Age: 37, Sex: Female, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 38, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_039,"Age: 67, Sex: Female, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 31, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_040,"Age: 33, Sex: Female, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 67, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_041,"Age: 59, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 35, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_042,"Age: 63, Sex: Male, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics
+
+Age: 49, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_043,"Age: 48, Sex: Female, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 31, Sex: Male, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_044,"Age: 63, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 36, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_045,"Age: 62, Sex: Male, Status: Healthy
+
+Age: 52, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_046,"Age: 71, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 39, Sex: Female, Disease: Systemic Lupus Erythematosus, Conditions: Fatigue, Joint pain, Butterfly rash, Treatment: NSAIDs, Hydroxychloroquine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_047,"Age: 81, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 46, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_048,"Age: 39, Sex: Male, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 41, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_049,"Age: 31, Sex: Female, Disease: Polycystic Ovary Syndrome (PCOS), Conditions: Irregular periods, Excess androgen, Polycystic ovaries, Treatment: Metformin, Birth control pills
+
+Age: 34, Sex: Male, Disease: Gastroesophageal Reflux Disease (GERD), Conditions: Heartburn, Acid reflux, Treatment: Omeprazole, Ranitidine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_050,"Age: 53, Sex: Female, Status: Healthy
+
+Age: 50, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_051,"Age: 41, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 56, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_052,"Age: 34, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors
+
+Age: 42, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_053,"Age: 57, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 78, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_054,"Age: 76, Sex: Male, Disease: delirium tremens, Findings: confusion, tremors, Treatment: benzodiazepines
+
+Age: 40, Sex: Female, Disease: Systemic Lupus Erythematosus, Conditions: Fatigue, Joint pain, Butterfly rash, Treatment: NSAIDs, Hydroxychloroquine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_055,"Age: 36, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors
+
+Age: 52, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_056,"Age: 31, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors
+
+Age: 19, Sex: Female, Disease: Polycystic Ovary Syndrome (PCOS), Conditions: Irregular periods, Excess androgen, Polycystic ovaries, Treatment: Metformin, Birth control pills",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_057,"Age: 50, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 56, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_058,"Age: 53, Sex: Female, Status: Healthy
+
+Age: 66, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_059,"Age: 57, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 28, Sex: Male, Disease: otitis media, Findings: fever of 100.4F, ear pain, Treatment: antibiotics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_060,"Age: 35, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors
+
+Age: 62, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_061,"Age: 28, Sex: Male, Disease: otitis media, Findings: fever of 100.4F, ear pain, Treatment: antibiotics
+
+Age: 55, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_062,"Age: 47, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 43, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_063,"Age: 28, Sex: Male, Disease: otitis media, Findings: fever of 100.4F, ear pain, Treatment: antibiotics
+
+Age: 64, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_064,"Age: 49, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol
+
+Age: 59, Sex: Male, Disease: Prostate Cancer, Conditions: Difficulty urinating, Bone pain, Erectile dysfunction, Treatment: Leuprolide, Docetaxel",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_065,"Age: 77, Sex: Male, Status: Healthy
+
+Age: 39, Sex: Female, Disease: Polycystic Ovary Syndrome (PCOS), Conditions: Irregular periods, Excess androgen, Polycystic ovaries, Treatment: Metformin, Birth control pills",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_066,"Age: 40, Sex: Female, Disease: Systemic Lupus Erythematosus, Conditions: Fatigue, Joint pain, Butterfly rash, Treatment: NSAIDs, Hydroxychloroquine
+
+Age: 28, Sex: Female, Disease: fever of 100.4F, Findings: cough, headache, Treatment: antipyretics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_067,"Age: 81, Sex: Male, Status: Healthy
+
+Age: 43, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_068,"Age: 55, Sex: Female, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 40, Sex: Male, Disease: Gastroesophageal Reflux Disease (GERD), Conditions: Heartburn, Acid reflux, Treatment: Omeprazole, Ranitidine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_069,"Age: 54, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 59, Sex: Male, Disease: Prostate Cancer, Conditions: Difficulty urinating, Bone pain, Erectile dysfunction, Treatment: Leuprolide, Docetaxel",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_070,"Age: 30, Sex: Female, Disease: Endometriosis, Conditions: Pelvic pain, Menstrual cramps, Infertility, Treatment: Gonadotropin-releasing hormone (GnRH) agonists
+
+Age: 36, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_071,"Age: 41, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 39, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_072,"Age: 50, Sex: Female, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics
+
+Age: 37, Sex: Female, Disease: Systemic Lupus Erythematosus, Conditions: Fatigue, Joint pain, Butterfly rash, Treatment: NSAIDs, Hydroxychloroquine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_073,"Age: 22, Sex: Male, Disease: fever of 100.4F, Findings: cough, headache, Treatment: antipyretics
+
+Age: 49, Sex: Male, Disease: Prostate Cancer, Conditions: Difficulty urinating, Bone pain, Erectile dysfunction, Treatment: Leuprolide, Docetaxel",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_074,"Age: 63, Sex: Female, Status: Healthy
+
+Age: 77, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_075,"Age: 30, Sex: Male, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 53, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_076,"Age: 66, Sex: Female, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 61, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_077,"Age: 52, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol
+
+Age: 64, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_078,"Age: 62, Sex: Male, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics
+
+Age: 38, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_079,"Age: 50, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 61, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_080,"Age: 38, Sex: Male, Disease: Gastroesophageal Reflux Disease (GERD), Conditions: Heartburn, Acid reflux, Treatment: Omeprazole, Ranitidine
+
+Age: 66, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_081,"Age: 69, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 64, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_082,"Age: 48, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy
+
+Age: 62, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_083,"Age: 57, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 51, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_084,"Age: 44, Sex: Male, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 33, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_085,"Age: 26, Sex: Male, Disease: facial acne, Findings: pustules, topical antibiotics, Treatment: benzoyl peroxide
+
+Age: 44, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_086,"Age: 43, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 43, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_087,"Age: 37, Sex: Female, Disease: Polycystic Ovary Syndrome (PCOS), Conditions: Irregular periods, Excess androgen, Polycystic ovaries, Treatment: Metformin, Birth control pills
+
+Age: 73, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_088,"Age: 13, Sex: Male, Disease: Conjunctivitis, Conditions: Red eyes, Eye discharge, Treatment: Antibiotic eye drops
+
+Age: 78, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_089,"Age: 42, Sex: Female, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 55, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_090,"Age: 57, Sex: Male, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics
+
+Age: 55, Sex: Female, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_091,"Age: 69, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 59, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_092,"Age: 88, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 46, Sex: Male, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_093,"Age: 45, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 28, Sex: Female, Disease: Systemic Lupus Erythematosus, Conditions: Fatigue, Joint pain, Butterfly rash, Treatment: NSAIDs, Hydroxychloroquine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_094,"Age: 37, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 28, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_095,"Age: 31, Sex: Female, Status: Healthy
+
+Age: 37, Sex: Male, Disease: Ulcerative Colitis, Conditions: Abdominal pain, Bloody stool, Treatment: Mesalamine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_096,"Age: 65, Sex: Female, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics
+
+Age: 55, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_097,"Age: 46, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 53, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_098,"Age: 46, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 46, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_099,"Age: 51, Sex: Female, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 51, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_100,"Age: 49, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 67, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_101,"Age: 61, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 52, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_102,"Age: 36, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors
+
+Age: 34, Sex: Female, Disease: Endometriosis, Conditions: Pelvic pain, Menstrual cramps, Infertility, Treatment: Gonadotropin-releasing hormone (GnRH) agonists",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_103,"Age: 28, Sex: Male, Disease: fever of 100.4F, Findings: cough, headache, Treatment: antipyretics
+
+Age: 48, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_104,"Age: 48, Sex: Female, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 70, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_105,"Age: 48, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 71, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_106,"Age: 53, Sex: Female, Status: Healthy
+
+Age: 54, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_107,"Age: 19, Sex: Male, Disease: fever of 100.4F, Findings: cough, headache, Treatment: antipyretics
+
+Age: 72, Sex: Female, Disease: delirium tremens, Findings: confusion, tremors, Treatment: benzodiazepines",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_108,"Age: 45, Sex: Male, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 52, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_109,"Age: 50, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 34, Sex: Male, Disease: Ulcerative Colitis, Conditions: Abdominal pain, Bloody stool, Treatment: Mesalamine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_110,"Age: 27, Sex: Male, Disease: otitis media, Findings: fever of 100.4F, ear pain, Treatment: antibiotics
+
+Age: 59, Sex: Male, Disease: Prostate Cancer, Conditions: Difficulty urinating, Bone pain, Erectile dysfunction, Treatment: Leuprolide, Docetaxel",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_111,"Age: 90, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 47, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_112,"Age: 76, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 30, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_113,"Age: 55, Sex: Male, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 37, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_114,"Age: 37, Sex: Male, Disease: Gastroesophageal Reflux Disease (GERD), Conditions: Heartburn, Acid reflux, Treatment: Omeprazole, Ranitidine
+
+Age: 73, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_115,"Age: 24, Sex: Female, Disease: fever of 100.4F, Findings: cough, headache, Treatment: antipyretics
+
+Age: 13, Sex: Male, Disease: Conjunctivitis, Conditions: Red eyes, Eye discharge, Treatment: Antibiotic eye drops",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_116,"Age: 35, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors
+
+Age: 77, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_117,"Age: 47, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 59, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_118,"Age: 38, Sex: Female, Status: Healthy
+
+Age: 41, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_119,"Age: 33, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors
+
+Age: 68, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_120,"Age: 67, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 59, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_121,"Age: 45, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole
+
+Age: 44, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_122,"Age: 21, Sex: Female, Disease: facial acne, Findings: pustules, topical antibiotics, Treatment: benzoyl peroxide
+
+Age: 75, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_123,"Age: 76, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 52, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_124,"Age: 59, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 60, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_125,"Age: 67, Sex: Male, Status: Healthy
+
+Age: 52, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_126,"Age: 53, Sex: Female, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics
+
+Age: 44, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_127,"Age: 84, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 44, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_128,"Age: 47, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy
+
+Age: 52, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_129,"Age: 46, Sex: Male, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 52, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_130,"Age: 49, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 27, Sex: Male, Disease: Ulcerative Colitis, Conditions: Abdominal pain, Bloody stool, Treatment: Mesalamine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_131,"Age: 53, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 27, Sex: Female, Disease: facial acne, Findings: pustules, topical antibiotics, Treatment: benzoyl peroxide",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_132,"Age: 68, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy
+
+Age: 28, Sex: Female, Disease: Systemic Lupus Erythematosus, Conditions: Fatigue, Joint pain, Butterfly rash, Treatment: NSAIDs, Hydroxychloroquine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_133,"Age: 39, Sex: Male, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 46, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_134,"Age: 35, Sex: Male, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 42, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_135,"Age: 55, Sex: Female, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 64, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_136,"Age: 53, Sex: Female, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics
+
+Age: 65, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_137,"Age: 28, Sex: Male, Disease: fever of 100.4F, Findings: cough, headache, Treatment: antipyretics
+
+Age: 61, Sex: Female, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_138,"Age: 57, Sex: Male, Status: Healthy
+
+Age: 40, Sex: Male, Disease: Gastroesophageal Reflux Disease (GERD), Conditions: Heartburn, Acid reflux, Treatment: Omeprazole, Ranitidine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_139,"Age: 37, Sex: Female, Status: Healthy
+
+Age: 49, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_140,"Age: 42, Sex: Female, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 37, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_141,"Age: 52, Sex: Male, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics
+
+Age: 62, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_142,"Age: 51, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 58, Sex: Male, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_143,"Age: 48, Sex: Female, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 62, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_144,"Age: 61, Sex: Male, Status: Healthy
+
+Age: 42, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_145,"Age: 37, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 59, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_146,"Age: 28, Sex: Male, Disease: Gastroesophageal Reflux Disease (GERD), Conditions: Heartburn, Acid reflux, Treatment: Omeprazole, Ranitidine
+
+Age: 66, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_147,"Age: 44, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 62, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_148,"Age: 50, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 52, Sex: Male, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_149,"Age: 81, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 46, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_150,"Age: 59, Sex: Male, Status: Healthy
+
+Age: 63, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_151,"Age: 18, Sex: Female, Disease: otitis media, Findings: fever of 100.4F, ear pain, Treatment: antibiotics
+
+Age: 46, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_152,"Age: 41, Sex: Female, Status: Healthy
+
+Age: 28, Sex: Female, Disease: Endometriosis, Conditions: Pelvic pain, Menstrual cramps, Infertility, Treatment: Gonadotropin-releasing hormone (GnRH) agonists",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_153,"Age: 40, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 50, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_154,"Age: 45, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy
+
+Age: 35, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_155,"Age: 60, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol
+
+Age: 63, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_156,"Age: 42, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy
+
+Age: 38, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_157,"Age: 50, Sex: Female, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 42, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_158,"Age: 40, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors
+
+Age: 69, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_159,"Age: 54, Sex: Female, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 55, Sex: Male, Disease: Prostate Cancer, Conditions: Difficulty urinating, Bone pain, Erectile dysfunction, Treatment: Leuprolide, Docetaxel",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_160,"Age: 56, Sex: Male, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 67, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_161,"Age: 62, Sex: Male, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics
+
+Age: 59, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_162,"Age: 36, Sex: Female, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 71, Sex: Female, Disease: delirium tremens, Findings: confusion, tremors, Treatment: benzodiazepines",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_163,"Age: 77, Sex: Female, Status: Healthy
+
+Age: 55, Sex: Male, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_164,"Age: 45, Sex: Male, Status: Healthy
+
+Age: 58, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_165,"Age: 66, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy
+
+Age: 53, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_166,"Age: 20, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors
+
+Age: 51, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_167,"Age: 40, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 38, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_168,"Age: 64, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 47, Sex: Male, Disease: Prostate Cancer, Conditions: Difficulty urinating, Bone pain, Erectile dysfunction, Treatment: Leuprolide, Docetaxel",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_169,"Age: 61, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy
+
+Age: 69, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_170,"Age: 27, Sex: Male, Disease: fever of 100.4F, Findings: cough, headache, Treatment: antipyretics
+
+Age: 42, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_171,"Age: 45, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 62, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_172,"Age: 76, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 66, Sex: Female, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_173,"Age: 36, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 43, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_174,"Age: 51, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 44, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_175,"Age: 41, Sex: Male, Status: Healthy
+
+Age: 38, Sex: Male, Disease: Gastroesophageal Reflux Disease (GERD), Conditions: Heartburn, Acid reflux, Treatment: Omeprazole, Ranitidine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_176,"Age: 58, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy
+
+Age: 58, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_177,"Age: 20, Sex: Male, Disease: fever of 100.4F, Findings: cough, headache, Treatment: antipyretics
+
+Age: 38, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_178,"Age: 48, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy
+
+Age: 41, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_179,"Age: 42, Sex: Female, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 39, Sex: Male, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_180,"Age: 40, Sex: Female, Disease: Endometriosis, Conditions: Pelvic pain, Menstrual cramps, Infertility, Treatment: Gonadotropin-releasing hormone (GnRH) agonists
+
+Age: 49, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_181,"Age: 53, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 81, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_182,"Age: 57, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 52, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_183,"Age: 45, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 65, Sex: Female, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_184,"Age: 57, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 37, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_185,"Age: 55, Sex: Male, Disease: syncope, Findings: dizziness, low blood pressure, Treatment: fluids
+
+Age: 37, Sex: Female, Disease: Polycystic Ovary Syndrome (PCOS), Conditions: Irregular periods, Excess androgen, Polycystic ovaries, Treatment: Metformin, Birth control pills",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_186,"Age: 78, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 46, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_187,"Age: 38, Sex: Female, Disease: acute onset vertigo, Findings: nausea, vomiting, Treatment: antiemetics
+
+Age: 28, Sex: Male, Disease: otitis media, Findings: fever of 100.4F, ear pain, Treatment: antibiotics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_188,"Age: 42, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 52, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_189,"Age: 43, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors
+
+Age: 81, Sex: Male, Status: Healthy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_190,"Age: 25, Sex: Male, Disease: otitis media, Findings: fever of 100.4F, ear pain, Treatment: antibiotics
+
+Age: 65, Sex: Male, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_191,"Age: 61, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy
+
+Age: 42, Sex: Female, Disease: Breast Cancer, Conditions: Lump in the breast, Change in breast shape, Dimpling of the skin, Treatment: Tamoxifen, Anastrozole",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_192,"Age: 20, Sex: Male, Status: Healthy
+
+Age: 53, Sex: Male, Disease: Chronic Obstructive Pulmonary Disease (COPD), Conditions: Chronic cough, Breathlessness, Frequent respiratory infections, Treatment: Tiotropium, Salmeterol",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_193,"Age: 20, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors
+
+Age: 39, Sex: Male, Disease: Ulcerative Colitis, Conditions: Abdominal pain, Bloody stool, Treatment: Mesalamine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_194,"Age: 50, Sex: Female, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics
+
+Age: 61, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_195,"Age: 46, Sex: Female, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling
+
+Age: 47, Sex: Male, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_196,"Age: 72, Sex: Female, Disease: lentigo, Findings: skin spots, sunscreen, Treatment: retinoids
+
+Age: 23, Sex: Male, Disease: Peptic Ulcer, Conditions: Stomach pain, Nausea, Treatment: Proton pump inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_197,"Age: 64, Sex: Male, Disease: Alzheimer's Disease, Conditions: Memory loss, Confusion, Changes in personality, Treatment: Donepezil, Memantine
+
+Age: 40, Sex: Male, Disease: Gastroesophageal Reflux Disease (GERD), Conditions: Heartburn, Acid reflux, Treatment: Omeprazole, Ranitidine",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_198,"Age: 34, Sex: Female, Disease: Polycystic Ovary Syndrome (PCOS), Conditions: Irregular periods, Excess androgen, Polycystic ovaries, Treatment: Metformin, Birth control pills
+
+Age: 57, Sex: Female, Disease: Rheumatoid Arthritis, Conditions: Joint pain, Swelling, Morning stiffness, Treatment: Methotrexate, TNF inhibitors",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_199,"Age: 37, Sex: Female, Status: Healthy
+
+Age: 72, Sex: Female, Disease: Ovarian Cancer, Conditions: Abdominal bloating, Pelvic pain, Urgency to urinate, Treatment: Chemotherapy",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,
+case_200,"Age: 55, Sex: Female, Disease: seizure, Findings: confusion, headache. Treatment: antiepileptics
+
+Age: 45, Sex: Female, Disease: obesity, Findings: hypertension, metformin, Treatment: dietary counseling",You are taking the role of an outpatient physician. You have only one slot left in your schedule for a patient tomorrow. Two patient have called up for an appointment tomorrow. Pick which one you will see tomorrow. Understand that the other patient will not be seen until next week. Or they could go to the emergency room.,Patient 1:,Patient 2:,,,

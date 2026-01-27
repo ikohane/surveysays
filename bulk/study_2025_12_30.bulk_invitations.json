@@ -1,0 +1,300 @@
+{
+  "campaignKey": "study_2025_12_30",
+  "invitations": [
+    {
+      "email": "alice@example.com",
+      "questionnaireVersion": 1,
+      "questionnaireJson": {
+        "title": "pick K from cases",
+        "questionnaireVersion": 1,
+        "blocks": [
+          {
+            "type": "vignette",
+            "id": "vignette_1",
+            "text": "24F with fever, neck stiffness, photophobia; altered mental status."
+          },
+          {
+            "type": "singleSelect",
+            "id": "decision_1",
+            "prompt": "What is the best next step?",
+            "required": true,
+            "choices": [
+              {
+                "id": "A",
+                "label": "Start empiric antibiotics after blood cultures"
+              },
+              {
+                "id": "B",
+                "label": "Wait for MRI before any treatment"
+              },
+              {
+                "id": "C",
+                "label": "Discharge with antivirals"
+              },
+              {
+                "id": "D",
+                "label": "Give NSAIDs only"
+              }
+            ]
+          }
+        ]
+      },
+      "metadata": {
+        "campaignKey": "study_2025_12_30",
+        "recipientStrata": {
+          "site": "SiteA",
+          "role": "attending"
+        },
+        "seed": 1,
+        "k": 1,
+        "pickerStrategy": "pick_k_cases",
+        "units": [
+          {
+            "caseId": "case_002",
+            "caseTags": [
+              "neuro",
+              "adult"
+            ]
+          }
+        ],
+        "questionnaireHash": "2070e2ea9ab0e8c1876c6dc81c5bed5b6427a85dbc36c66555c6c0ca76e142ad"
+      }
+    },
+    {
+      "email": "bob@example.com",
+      "questionnaireVersion": 1,
+      "questionnaireJson": {
+        "title": "pick K from cases",
+        "questionnaireVersion": 1,
+        "blocks": [
+          {
+            "type": "vignette",
+            "id": "vignette_1",
+            "text": "72F with acute unilateral leg swelling after long flight; tachycardia."
+          },
+          {
+            "type": "singleSelect",
+            "id": "decision_1",
+            "prompt": "What is the best next step?",
+            "required": true,
+            "choices": [
+              {
+                "id": "A",
+                "label": "Start anticoagulation if no contraindications"
+              },
+              {
+                "id": "B",
+                "label": "Order echocardiogram only"
+              },
+              {
+                "id": "C",
+                "label": "Give diuretics"
+              },
+              {
+                "id": "D",
+                "label": "Recommend leg elevation only"
+              }
+            ]
+          }
+        ]
+      },
+      "metadata": {
+        "campaignKey": "study_2025_12_30",
+        "recipientStrata": {
+          "site": "SiteA",
+          "role": "resident"
+        },
+        "seed": 1,
+        "k": 1,
+        "pickerStrategy": "pick_k_cases",
+        "units": [
+          {
+            "caseId": "case_003",
+            "caseTags": [
+              "vascular",
+              "adult"
+            ]
+          }
+        ],
+        "questionnaireHash": "d8a7146f6ce3a198bcd93a0fc7523dd82a16603ea0d4e3697cfdafded13bbe66"
+      }
+    },
+    {
+      "email": "carol@example.com",
+      "questionnaireVersion": 1,
+      "questionnaireJson": {
+        "title": "pick K from cases",
+        "questionnaireVersion": 1,
+        "blocks": [
+          {
+            "type": "vignette",
+            "id": "vignette_1",
+            "text": "72F with acute unilateral leg swelling after long flight; tachycardia."
+          },
+          {
+            "type": "singleSelect",
+            "id": "decision_1",
+            "prompt": "What is the best next step?",
+            "required": true,
+            "choices": [
+              {
+                "id": "A",
+                "label": "Start anticoagulation if no contraindications"
+              },
+              {
+                "id": "B",
+                "label": "Order echocardiogram only"
+              },
+              {
+                "id": "C",
+                "label": "Give diuretics"
+              },
+              {
+                "id": "D",
+                "label": "Recommend leg elevation only"
+              }
+            ]
+          }
+        ]
+      },
+      "metadata": {
+        "campaignKey": "study_2025_12_30",
+        "recipientStrata": {
+          "site": "SiteB",
+          "role": "attending"
+        },
+        "seed": 1,
+        "k": 1,
+        "pickerStrategy": "pick_k_cases",
+        "units": [
+          {
+            "caseId": "case_003",
+            "caseTags": [
+              "vascular",
+              "adult"
+            ]
+          }
+        ],
+        "questionnaireHash": "d8a7146f6ce3a198bcd93a0fc7523dd82a16603ea0d4e3697cfdafded13bbe66"
+      }
+    },
+    {
+      "email": "dave@example.com",
+      "questionnaireVersion": 1,
+      "questionnaireJson": {
+        "title": "pick K from cases",
+        "questionnaireVersion": 1,
+        "blocks": [
+          {
+            "type": "vignette",
+            "id": "vignette_1",
+            "text": "65M with chest pain radiating to left arm; diaphoresis; BP 90/60."
+          },
+          {
+            "type": "singleSelect",
+            "id": "decision_1",
+            "prompt": "What is the best next step?",
+            "required": true,
+            "choices": [
+              {
+                "id": "A",
+                "label": "Aspirin + activate cath lab"
+              },
+              {
+                "id": "B",
+                "label": "Order outpatient stress test"
+              },
+              {
+                "id": "C",
+                "label": "Discharge with reassurance"
+              },
+              {
+                "id": "D",
+                "label": "Give ibuprofen and observe"
+              }
+            ]
+          }
+        ]
+      },
+      "metadata": {
+        "campaignKey": "study_2025_12_30",
+        "recipientStrata": {
+          "site": "SiteB",
+          "role": "resident"
+        },
+        "seed": 1,
+        "k": 1,
+        "pickerStrategy": "pick_k_cases",
+        "units": [
+          {
+            "caseId": "case_001",
+            "caseTags": [
+              "cardio",
+              "adult"
+            ]
+          }
+        ],
+        "questionnaireHash": "76e0f215d60ede9e4fd4a53e4001115b4dd534a52ccf6750434fb8910ed28a13"
+      }
+    },
+    {
+      "email": "erin@example.com",
+      "questionnaireVersion": 1,
+      "questionnaireJson": {
+        "title": "pick K from cases",
+        "questionnaireVersion": 1,
+        "blocks": [
+          {
+            "type": "vignette",
+            "id": "vignette_1",
+            "text": "24F with fever, neck stiffness, photophobia; altered mental status."
+          },
+          {
+            "type": "singleSelect",
+            "id": "decision_1",
+            "prompt": "What is the best next step?",
+            "required": true,
+            "choices": [
+              {
+                "id": "A",
+                "label": "Start empiric antibiotics after blood cultures"
+              },
+              {
+                "id": "B",
+                "label": "Wait for MRI before any treatment"
+              },
+              {
+                "id": "C",
+                "label": "Discharge with antivirals"
+              },
+              {
+                "id": "D",
+                "label": "Give NSAIDs only"
+              }
+            ]
+          }
+        ]
+      },
+      "metadata": {
+        "campaignKey": "study_2025_12_30",
+        "recipientStrata": {
+          "site": "SiteC",
+          "role": "attending"
+        },
+        "seed": 1,
+        "k": 1,
+        "pickerStrategy": "pick_k_cases",
+        "units": [
+          {
+            "caseId": "case_002",
+            "caseTags": [
+              "neuro",
+              "adult"
+            ]
+          }
+        ],
+        "questionnaireHash": "2070e2ea9ab0e8c1876c6dc81c5bed5b6427a85dbc36c66555c6c0ca76e142ad"
+      }
+    }
+  ]
+}

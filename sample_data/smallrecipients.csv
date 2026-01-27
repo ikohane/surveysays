@@ -1,0 +1,4 @@
+email,firstname,lastname,site,role
+alice@example.com,Alice,Anderson,SiteA,attending
+bob@example.com,Bob,Brown,SiteA,resident
+carol@example.com,Carol,Clark,SiteB,attending

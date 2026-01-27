@@ -1,0 +1,4 @@
+case_id,vignette,prompt,choice_A,choice_B,choice_C,choice_D,tags
+case_001,65M with chest pain radiating to left arm; diaphoresis; BP 90/60.,What is the best next step?,Aspirin + activate cath lab,Order outpatient stress test,Discharge with reassurance,Give ibuprofen and observe,cardio|adult
+case_002,"24F with fever, neck stiffness, photophobia; altered mental status.",What is the best next step?,Start empiric antibiotics after blood cultures,Wait for MRI before any treatment,Discharge with antivirals,Give NSAIDs only,neuro|adult
+case_003,72F with acute unilateral leg swelling after long flight; tachycardia.,What is the best next step?,Start anticoagulation if no contraindications,Order echocardiogram only,Give diuretics,Recommend leg elevation only,vascular|adult
