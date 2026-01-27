@@ -1872,12 +1872,15 @@ def list_invitation_ledger_rows(conn: sqlite3.Connection, *, campaign_id: int) -
             """
             SELECT
               i.email,
+              json_extract(r.strata_json, '$.firstname') AS firstname,
+              json_extract(r.strata_json, '$.lastname') AS lastname,
               i.token,
               i.created_at AS invited_at,
               i.opened_at,
               i.questionnaire_hash,
               s.submitted_at
             FROM invitations i
+            LEFT JOIN recipients r ON r.email = i.email
             LEFT JOIN submissions s
               ON s.campaign_id = i.campaign_id AND s.token = i.token
             WHERE i.campaign_id = ?
@@ -1909,6 +1912,8 @@ def list_cloud_invitation_ledger_rows(
             )
             SELECT
               l.email,
+              json_extract(r.strata_json, '$.firstname') AS firstname,
+              json_extract(r.strata_json, '$.lastname') AS lastname,
               l.max_uploaded_at AS invited_at,
               NULL AS opened_at,
               (
@@ -1921,6 +1926,7 @@ def list_cloud_invitation_ledger_rows(
               s.submitted_at,
               l.cloud_token AS token
             FROM latest l
+            LEFT JOIN recipients r ON r.email = l.email
             LEFT JOIN submissions s
               ON s.campaign_id = ? AND s.token = l.cloud_token
             ORDER BY l.email

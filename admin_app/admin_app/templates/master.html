@@ -9,6 +9,10 @@
         </div>
       </div>
       <div class="actions">
+        {% if ui_mode == 'basic' %}
+        <a href="{{ url_for('results', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Results</button></a>
+        <a href="{{ url_for('campaign_recipients', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Recipients</button></a>
+        {% else %}
         <a href="{{ url_for('campaign_detail', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Campaign</button></a>
         <a href="{{ url_for('results', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Results</button></a>
         <a href="{{ url_for('campaign_recipients', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Recipients</button></a>
@@ -16,6 +20,7 @@
           <a href="{{ url_for('campaign_invitations', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Invitations</button></a>
           <a href="{{ url_for('online_stats', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Online stats</button></a>
           <a href="{{ url_for('reports', campaign_key=campaign['campaign_key']) }}"><button class="secondary" type="button">Reports</button></a>
+        {% endif %}
         {% endif %}
       </div>
     </div>

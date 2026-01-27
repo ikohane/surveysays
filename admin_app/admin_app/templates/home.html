@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+  {% if ui_mode == 'expert' %}
   <div class="card">
     <h2 style="margin: 0 0 6px 0;">Admin mode</h2>
     <div class="muted" style="margin-bottom: 10px;">
@@ -40,24 +41,32 @@
       To import cases, recipients, or templates, go to the <strong>Master page</strong> for any campaign.
     </div>
   </div>
+  {% endif %}
 
   <div class="card">
-    <h2 style="margin: 0 0 10px 0;">Campaigns</h2>
+    <h2 style="margin: 0 0 10px 0;">{% if ui_mode == 'basic' %}Surveys{% else %}Campaigns{% endif %}</h2>
     <form action="{{ url_for('campaigns_upsert') }}" method="post" class="card" style="margin: 0 0 14px 0;">
-      <h3 style="margin-top:0;">Create / Update Campaign</h3>
+      <h3 style="margin-top:0;">{% if ui_mode == 'basic' %}Create New Survey{% else %}Create / Update Campaign{% endif %}</h3>
+      {% if ui_mode == 'basic' %}
+      <div class="muted" style="margin: 6px 0 12px 0;">
+        Start by creating a survey. Then upload your questions and recipients on the next page.
+      </div>
+      {% else %}
       <div class="muted" style="margin: 6px 0 12px 0;">
         After creating a campaign, import data and generate variants on the Master page. You can adjust picker strategy and k on the Campaign page if needed.
       </div>
+      {% endif %}
       <div class="row">
         <div>
-          <label>campaign_key</label>
+          <label>{% if ui_mode == 'basic' %}Survey Name{% else %}campaign_key{% endif %}</label>
           <input name="campaign_key" type="text" placeholder="e.g. study_2025_01" required />
         </div>
         <div>
-          <label>title</label>
+          <label>{% if ui_mode == 'basic' %}Survey Title{% else %}title{% endif %}</label>
           <input name="title" type="text" placeholder="e.g. Clinical Case Decision Survey" required />
         </div>
       </div>
+      {% if ui_mode == 'expert' %}
       <div class="row" style="margin-top: 12px;">
         <div>
           <label>seed</label>
@@ -68,39 +77,69 @@
           <input name="questionnaire_version" type="number" value="1" required />
         </div>
       </div>
+      {% else %}
+      <input name="seed" type="hidden" value="1" />
+      <input name="questionnaire_version" type="hidden" value="1" />
+      {% endif %}
       <div class="row" style="margin-top: 12px;">
         <div>
-          <label>picker_strategy</label>
+          <label>{% if ui_mode == 'basic' %}Survey Type{% else %}picker_strategy{% endif %}</label>
           <select name="picker_strategy" required>
+            {% if ui_mode == 'basic' %}
+            <option value="pick_k_cases">Fixed Questions (everyone gets same questions)</option>
+            <option value="online_assign">Balanced Distribution (assigns questions fairly)</option>
+            <option value="template_expand">Template-Based (advanced)</option>
+            {% else %}
             <option value="pick_k_cases">pick_k_cases</option>
             <option value="online_assign">online_assign</option>
             <option value="template_expand">template_expand</option>
+            {% endif %}
           </select>
         </div>
         <div>
-          <label>k</label>
+          <label>{% if ui_mode == 'basic' %}Questions per person{% else %}k{% endif %}</label>
           <input name="k" type="number" value="2" required />
         </div>
       </div>
       <div style="height: 12px;"></div>
-      <button type="submit">Create Campaign</button>
+      <button type="submit">{% if ui_mode == 'basic' %}Create Survey{% else %}Create Campaign{% endif %}</button>
     </form>
 
     {% if campaigns %}
       <table>
         <thead>
           <tr>
+            {% if ui_mode == 'basic' %}
+            <th>Survey Name</th>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Actions</th>
+            {% else %}
             <th>campaign_key</th>
             <th>title</th>
             <th>seed</th>
             <th>version</th>
             <th>master</th>
             <th>created</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
           {% for c in campaigns %}
             <tr>
+              {% if ui_mode == 'basic' %}
+              <td><strong>{{ c['campaign_key'] }}</strong></td>
+              <td>{{ c['title'] }}</td>
+              <td>
+                {% if c['picker_strategy'] == 'pick_k_cases' %}Fixed Questions
+                {% elif c['picker_strategy'] == 'online_assign' %}Balanced
+                {% else %}Template
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ url_for('master_view', campaign_key=c['campaign_key']) }}">Open</a>
+              </td>
+              {% else %}
               <td><a href="{{ url_for('campaign_detail', campaign_key=c['campaign_key']) }}">{{ c['campaign_key'] }}</a></td>
               <td>{{ c['title'] }}</td>
               <td>{{ c['seed'] }}</td>
@@ -110,12 +149,13 @@
                 <a href="{{ url_for('master_view', campaign_key=c['campaign_key']) }}">Master</a>
               </td>
               <td class="muted">{{ c['created_at']|edt }}</td>
+              {% endif %}
             </tr>
           {% endfor %}
         </tbody>
       </table>
     {% else %}
-      <div class="muted">No campaigns yet.</div>
+      <div class="muted">{% if ui_mode == 'basic' %}No surveys yet. Create one above to get started.{% else %}No campaigns yet.{% endif %}</div>
     {% endif %}
   </div>
 {% endblock %}

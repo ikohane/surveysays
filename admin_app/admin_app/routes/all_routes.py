@@ -9,7 +9,7 @@ import sqlite3
 import hashlib
 from typing import Any
 
-from flask import Flask, Response, flash, redirect, render_template, request, url_for
+from flask import Flask, Response, flash, redirect, render_template, request, session, url_for
 
 from qgen.generator import generate_bulk_payload
 from qgen.io_csv import parse_cases_csv, parse_recipients_csv
@@ -98,9 +98,23 @@ from ..utils import (
 
 
 def register(app: Flask, db: Db) -> None:
+    # Helper to get UI mode from session
+    def get_ui_mode() -> str:
+        """Get UI mode from session, default to 'basic'."""
+        return session.get('ui_mode', 'basic')
+    
     # -----------------------------
     # Home + settings
     # -----------------------------
+    @app.post("/toggle_ui_mode")
+    def toggle_ui_mode() -> Response:
+        """Toggle between basic and expert UI modes."""
+        current_mode = get_ui_mode()
+        new_mode = 'expert' if current_mode == 'basic' else 'basic'
+        session['ui_mode'] = new_mode
+        flash(f"Switched to {new_mode.title()} Mode", "success")
+        return redirect(request.referrer or url_for("home"))
+    
     @app.get("/")
     def home() -> str:
         with db.connect() as conn:
@@ -125,6 +139,7 @@ def register(app: Flask, db: Db) -> None:
             cases_last_updated=cases_last_updated,
             recipients_last_updated=recipients_last_updated,
             admin_mode=mode,
+            ui_mode=get_ui_mode(),
         )
 
     @app.post("/settings/mode")
@@ -915,6 +930,7 @@ def register(app: Flask, db: Db) -> None:
             generation_waves=generation_waves,
             recipients_with_variants=recipients_with_variants,
             pending_recipients=pending_recipients,
+            ui_mode=get_ui_mode(),
         )
 
     @app.post("/campaigns/<campaign_key>/cloud/sync")
@@ -965,18 +981,44 @@ def register(app: Flask, db: Db) -> None:
 
     @app.post("/campaigns/<campaign_key>/email-yaml")
     def update_email_yaml(campaign_key: str) -> Response:
-        email_yaml = request.form.get("email_yaml") or ""
+        # Support both YAML (Expert mode) and individual fields (Basic mode)
+        email_yaml = request.form.get("email_yaml", "").strip()
+        email_from = request.form.get("email_from", "").strip()
+        email_subject = request.form.get("email_subject", "").strip()
+        email_html = request.form.get("email_html", "").strip()
+        email_base_url = request.form.get("email_base_url", "").strip()
+        
+        cloud_base_url, _ = get_cloud_config()
+        railway_app_url, _ = get_railway_config()
+        
         with db.connect() as conn:
             campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
             if campaign is None:
                 flash("Campaign not found", "error")
                 return redirect(url_for("home"))
+            
+            # If individual fields provided (Basic mode), construct YAML
+            if email_from or email_subject or email_html:
+                if not email_base_url:
+                    if campaign['picker_strategy'] == 'online_assign' and railway_app_url:
+                        email_base_url = railway_app_url
+                    elif cloud_base_url:
+                        email_base_url = cloud_base_url
+                    else:
+                        email_base_url = "http://127.0.0.1:5055"
+                email_yaml = email_config_to_yaml(
+                    from_email=email_from,
+                    subject=email_subject,
+                    base_url=email_base_url,
+                    html=email_html,
+                )
+            
             try:
                 config = normalize_email_config(email_yaml)
                 if not config["from_email"] or not config["subject"] or not config["html"]:
                     raise ValueError("from, subject, and html are required")
             except Exception as e:
-                flash(f"Invalid email YAML: {e}", "error")
+                flash(f"Invalid email configuration: {e}", "error")
                 return redirect(url_for("master_view", campaign_key=campaign_key))
             update_campaign_email_yaml(conn, campaign_key=campaign_key, email_yaml=email_yaml)
             conn.execute(
@@ -989,9 +1031,28 @@ def register(app: Flask, db: Db) -> None:
             )
             log_event(conn, campaign=campaign, event="update_email_yaml", success=True)
             conn.commit()
-        flash("Saved email YAML (and synced to individual fields)", "success")
+        flash("Email settings saved", "success")
         return redirect(url_for("master_view", campaign_key=campaign_key))
 
+    @app.post("/campaigns/<campaign_key>/push_to_cloud")
+    def push_to_cloud(campaign_key: str) -> Response:
+        """
+        Smart routing: pushes to Railway for online_assign, Cloudflare otherwise.
+        Used by Basic mode's unified "Push to Cloud" button.
+        """
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            
+            if campaign['picker_strategy'] == 'online_assign':
+                # Route to Railway
+                return railway_push(campaign_key)
+            else:
+                # Route to Cloudflare
+                return cloud_push(campaign_key)
+    
     @app.post("/campaigns/<campaign_key>/cloud/push")
     def cloud_push(campaign_key: str) -> Response:
         cloud_base_url, cloud_admin_token = get_cloud_config()
