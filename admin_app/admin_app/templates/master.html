@@ -477,7 +477,7 @@
           <label>email_from</label>
           {% if ui_mode == 'basic' %}
             <select name="email_from" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 8px;">
-              <option value="zak@study.hvp.global" {% if campaign['email_from'] == 'zak@study.hvp.global' %}selected{% endif %}>zak@study.hvp.global</option>
+              <option value="zak@study.hvp.global" {% if not campaign['email_from'] or campaign['email_from'] == 'zak@study.hvp.global' %}selected{% endif %}>zak@study.hvp.global</option>
               <option value="payal@study.hvp.global" {% if campaign['email_from'] == 'payal@study.hvp.global' %}selected{% endif %}>payal@study.hvp.global</option>
               <option value="info@study.hvp.global" {% if campaign['email_from'] == 'info@study.hvp.global' %}selected{% endif %}>info@study.hvp.global</option>
             </select>
@@ -487,7 +487,11 @@
         </div>
         <div>
           <label>email_subject</label>
-          <input type="text" name="email_subject" value="{{ campaign['email_subject'] or '' }}" placeholder="Subject line" />
+          {% if ui_mode == 'basic' %}
+            <input type="text" name="email_subject" value="{{ campaign['email_subject'] or 'You\'re invited to participate in our study' }}" placeholder="Subject line" />
+          {% else %}
+            <input type="text" name="email_subject" value="{{ campaign['email_subject'] or '' }}" placeholder="Subject line" />
+          {% endif %}
         </div>
       </div>
       <div style="height: 10px;"></div>
@@ -530,7 +534,20 @@
 
 &lt;p&gt;Thank you for your participation.&lt;/p&gt;{% endraw %}</pre>
       </details>
+      {% if ui_mode == 'basic' and not campaign['email_html'] %}
+      <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{% raw %}<p>Dear {{{RECIPIENT_FIRST_NAME}}},</p>
+
+<p>You are invited to participate in our study: <strong>{{{CAMPAIGN_TITLE}}}</strong>.</p>
+
+<p><a href="{{{SURVEY_LINK}}}">Click here to begin the survey</a></p>
+
+<p>Or copy and paste this link into your browser:<br/>
+{{{SURVEY_LINK}}}</p>
+
+<p>Thank you for your participation.</p>{% endraw %}</textarea>
+      {% else %}
       <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ campaign['email_html'] or '' }}</textarea>
+      {% endif %}
       <div style="height: 10px;"></div>
       <button class="secondary" type="submit">Save email settings</button>
     </form>
