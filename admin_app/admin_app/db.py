@@ -485,56 +485,97 @@ class Db:
             _ensure_generation_waves_table(conn)
 
 
+class PostgresConnectionWrapper:
+    """
+    Wrapper to make psycopg2 connections compatible with SQLite-style conn.execute().
+    """
+    def __init__(self, conn: Any):
+        self._conn = conn
+        self._cursor: Any = None
+        
+    def execute(self, sql: str, parameters: tuple | list = ()) -> Any:
+        """Execute SQL and return cursor (compatible with SQLite interface)."""
+        if self._cursor is None:
+            import psycopg2.extras
+            self._cursor = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        self._cursor.execute(sql, parameters)
+        return self._cursor
+    
+    def executemany(self, sql: str, seq_of_parameters: Any) -> Any:
+        """Execute SQL with multiple parameter sets."""
+        if self._cursor is None:
+            import psycopg2.extras
+            self._cursor = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        self._cursor.executemany(sql, seq_of_parameters)
+        return self._cursor
+    
+    def commit(self) -> None:
+        self._conn.commit()
+    
+    def rollback(self) -> None:
+        self._conn.rollback()
+    
+    def close(self) -> None:
+        if self._cursor:
+            self._cursor.close()
+        self._conn.close()
+    
+    def __enter__(self) -> "PostgresConnectionWrapper":
+        return self
+    
+    def __exit__(self, *args: Any) -> None:
+        if self._cursor:
+            self._cursor.close()
+        self._conn.close()
+
+
 class PostgresDb:
     """PostgreSQL database handler for Railway deployment."""
     def __init__(self, database_url: str):
         self.database_url = database_url
         self.is_postgres = True
         
-    def connect(self) -> Any:
-        """Create PostgreSQL connection with dict-like row factory."""
+    def connect(self) -> PostgresConnectionWrapper:
+        """Create PostgreSQL connection with SQLite-compatible interface."""
         try:
             import psycopg2
-            import psycopg2.extras
         except ImportError:
             raise ImportError("psycopg2 not installed. Run: pip install psycopg2-binary")
         
         conn = psycopg2.connect(self.database_url)
-        conn.cursor_factory = psycopg2.extras.RealDictCursor
-        return conn
+        return PostgresConnectionWrapper(conn)
     
     def init(self) -> None:
         """Initialize PostgreSQL schema."""
         with self.connect() as conn:
-            with conn.cursor() as cur:
-                # Execute entire schema as one transaction
-                # Split by CREATE TABLE and CREATE INDEX to preserve statement order
-                statements = []
-                current = []
-                for line in SCHEMA_SQL_POSTGRES.split('\n'):
-                    line = line.strip()
-                    if not line:
-                        continue
-                    if line.startswith('CREATE ') and current:
-                        # Finish previous statement
-                        statements.append('\n'.join(current))
-                        current = [line]
-                    else:
-                        current.append(line)
-                # Add last statement
-                if current:
+            # Execute entire schema as one transaction
+            # Split by CREATE TABLE and CREATE INDEX to preserve statement order
+            statements = []
+            current = []
+            for line in SCHEMA_SQL_POSTGRES.split('\n'):
+                line = line.strip()
+                if not line:
+                    continue
+                if line.startswith('CREATE ') and current:
+                    # Finish previous statement
                     statements.append('\n'.join(current))
-                
-                # Execute each CREATE statement
-                for stmt in statements:
-                    stmt = stmt.strip().rstrip(';')
-                    if stmt:
-                        try:
-                            cur.execute(stmt)
-                        except Exception as e:
-                            # Skip if table already exists
-                            if 'already exists' not in str(e):
-                                raise
+                    current = [line]
+                else:
+                    current.append(line)
+            # Add last statement
+            if current:
+                statements.append('\n'.join(current))
+            
+            # Execute each CREATE statement
+            for stmt in statements:
+                stmt = stmt.strip().rstrip(';')
+                if stmt:
+                    try:
+                        conn.execute(stmt)
+                    except Exception as e:
+                        # Skip if table already exists
+                        if 'already exists' not in str(e):
+                            raise
             conn.commit()
 
 
