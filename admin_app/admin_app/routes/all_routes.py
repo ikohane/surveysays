@@ -147,16 +147,27 @@ def register(app: Flask, db: Db) -> None:
         title = (request.form.get("title") or "").strip()
         seed_raw = (request.form.get("seed") or "").strip()
         version_raw = (request.form.get("questionnaire_version") or "").strip()
+        picker_strategy = (request.form.get("picker_strategy") or "pick_k_cases").strip()
+        k_raw = (request.form.get("k") or "1").strip()
 
         if not campaign_key or not title:
             flash("campaign_key and title are required", "error")
             return redirect(url_for("home"))
 
+        if picker_strategy not in ("pick_k_cases", "template_expand", "online_assign"):
+            flash("picker_strategy must be pick_k_cases, template_expand, or online_assign", "error")
+            return redirect(url_for("home"))
+
         try:
             seed = int(seed_raw)
             version = int(version_raw)
+            k = int(k_raw)
         except ValueError:
-            flash("seed and questionnaire_version must be integers", "error")
+            flash("seed, questionnaire_version, and k must be integers", "error")
+            return redirect(url_for("home"))
+
+        if k < 1:
+            flash("k must be >= 1", "error")
             return redirect(url_for("home"))
 
         with db.connect() as conn:
@@ -166,9 +177,11 @@ def register(app: Flask, db: Db) -> None:
                 title=title,
                 seed=seed,
                 questionnaire_version=version,
+                picker_strategy=picker_strategy,
+                k=k,
             )
             conn.commit()
-        flash(f"Created campaign '{campaign_key}'. Configure picker strategy on the Campaign page.", "success")
+        flash(f"Created campaign '{campaign_key}' with strategy '{picker_strategy}' and k={k}.", "success")
         return redirect(url_for("campaign_detail", campaign_key=campaign_key))
 
     @app.get("/campaigns/<campaign_key>")
@@ -387,8 +400,17 @@ def register(app: Flask, db: Db) -> None:
                 log_event(conn, campaign=campaign, event="generate_variants", success=False, message="No recipients imported yet")
                 return redirect(url_for("master_view", campaign_key=campaign_key))
 
-            picker_strategy = campaign["picker_strategy"] if "picker_strategy" in campaign else "pick_k_cases"
-            k = int(campaign["k"]) if "k" in campaign else 1
+            # Read campaign settings - use try/except for robust column access
+            try:
+                picker_strategy = campaign["picker_strategy"] or "pick_k_cases"
+            except (KeyError, IndexError):
+                picker_strategy = "pick_k_cases"
+            
+            try:
+                k = int(campaign["k"]) if campaign["k"] else 1
+            except (KeyError, IndexError, TypeError):
+                k = 1
+            
             seed = int(campaign["seed"])
             campaign_id = int(campaign["id"])
 

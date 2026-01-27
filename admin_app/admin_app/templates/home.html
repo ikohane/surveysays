@@ -46,7 +46,7 @@
     <form action="{{ url_for('campaigns_upsert') }}" method="post" class="card" style="margin: 0 0 14px 0;">
       <h3 style="margin-top:0;">Create / Update Campaign</h3>
       <div class="muted" style="margin: 6px 0 12px 0;">
-        After creating a campaign, configure picker strategy on the Campaign page, then import data and generate variants on the Master page.
+        After creating a campaign, import data and generate variants on the Master page. You can adjust picker strategy and k on the Campaign page if needed.
       </div>
       <div class="row">
         <div>
@@ -66,6 +66,20 @@
         <div>
           <label>questionnaire_version</label>
           <input name="questionnaire_version" type="number" value="1" required />
+        </div>
+      </div>
+      <div class="row" style="margin-top: 12px;">
+        <div>
+          <label>picker_strategy</label>
+          <select name="picker_strategy" required>
+            <option value="pick_k_cases">pick_k_cases</option>
+            <option value="online_assign">online_assign</option>
+            <option value="template_expand">template_expand</option>
+          </select>
+        </div>
+        <div>
+          <label>k</label>
+          <input name="k" type="number" value="2" required />
         </div>
       </div>
       <div style="height: 12px;"></div>

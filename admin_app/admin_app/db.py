@@ -949,17 +949,21 @@ def upsert_campaign(
     title: str,
     seed: int,
     questionnaire_version: int,
+    picker_strategy: str = "pick_k_cases",
+    k: int = 1,
 ) -> int:
     conn.execute(
         """
-        INSERT INTO campaigns (campaign_key, title, seed, questionnaire_version, layout_yaml)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO campaigns (campaign_key, title, seed, questionnaire_version, picker_strategy, k, layout_yaml)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(campaign_key) DO UPDATE SET
           title = excluded.title,
           seed = excluded.seed,
-          questionnaire_version = excluded.questionnaire_version
+          questionnaire_version = excluded.questionnaire_version,
+          picker_strategy = excluded.picker_strategy,
+          k = excluded.k
         """,
-        (campaign_key, title, seed, questionnaire_version, DEFAULT_LAYOUT_YAML),
+        (campaign_key, title, seed, questionnaire_version, picker_strategy, k, DEFAULT_LAYOUT_YAML),
     )
     row = conn.execute(
         "SELECT id FROM campaigns WHERE campaign_key = ?",
@@ -1477,6 +1481,10 @@ def list_question_items_with_stats(conn: sqlite3.Connection, *, campaign_id: int
               qi.item_id,
               qi.source_kind,
               qi.source_id,
+              qi.vignette,
+              qi.prompt,
+              qi.choices_json,
+              qi.tags_json,
               qs.assigned_count,
               qs.submitted_count,
               qi.created_at
