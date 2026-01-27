@@ -444,7 +444,7 @@
       <div style="height: 10px;"></div>
       <button class="secondary" type="submit">Save email settings</button>
     </form>
-    {% if campaign['picker_strategy'] != 'online_assign' %}
+    {% if ui_mode == 'expert' and campaign['picker_strategy'] != 'online_assign' %}
       <div style="height: 10px;"></div>
       <form action="{{ url_for('send_emails', campaign_key=campaign['campaign_key']) }}" method="post">
         <button type="submit">Send invitation emails (Cloudflare/Local)</button>
@@ -453,13 +453,50 @@
       <a href="{{ url_for('email_preview', campaign_key=campaign['campaign_key']) }}">
         <button class="secondary" type="button">Dry-run preview (no send)</button>
       </a>
-    {% else %}
+    {% elif ui_mode == 'expert' and campaign['picker_strategy'] == 'online_assign' %}
       <div style="height: 10px;"></div>
       <div class="muted" style="padding: 10px; background: #fef3c7; border-radius: 6px;">
         ℹ️ <strong>For Dynamic Assignment campaigns:</strong> Use the "Send Emails" button in the <strong>Railway Deployment</strong> section below instead.
       </div>
     {% endif %}
   </div>
+
+  {% if ui_mode == 'basic' %}
+  <div class="card">
+    <h3 style="margin-top:0;">📤 Cloud Deployment</h3>
+    <div class="muted">
+      Deploy your survey to the cloud so recipients can access it online.
+    </div>
+    <div style="height: 10px;"></div>
+    
+    <div class="actions">
+      <form action="{{ url_for('push_to_cloud', campaign_key=campaign['campaign_key']) }}" method="post" style="display: inline-block; margin-right: 10px;">
+        <button type="submit">Push to Cloud</button>
+      </form>
+      
+      {% if campaign['picker_strategy'] == 'online_assign' %}
+      <form action="{{ url_for('railway_send_emails', campaign_key=campaign['campaign_key']) }}" method="post" style="display: inline-block;">
+        <button type="submit">Send Emails</button>
+      </form>
+      {% else %}
+      <form action="{{ url_for('send_emails', campaign_key=campaign['campaign_key']) }}" method="post" style="display: inline-block;">
+        <button type="submit">Send Emails</button>
+      </form>
+      {% endif %}
+    </div>
+    
+    <div style="height: 10px;"></div>
+    <div class="muted" style="padding: 10px; background: #dcfce7; border-radius: 6px;">
+      📧 <strong>Testing Mode:</strong> All emails redirect to <code>kohane@gmail.com</code>
+    </div>
+    
+    <div style="height: 10px;"></div>
+    <div class="muted">
+      <strong>Step 1:</strong> Push to Cloud - Uploads your questions and creates unique links<br>
+      <strong>Step 2:</strong> Send Emails - Sends invitation emails to all recipients
+    </div>
+  </div>
+  {% endif %}
 
   <div class="card">
     <h3 style="margin-top:0;">Data Management (Global)</h3>
