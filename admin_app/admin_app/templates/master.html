@@ -499,11 +499,13 @@
         <div>
           <label>email_base_url</label>
           {% if campaign['picker_strategy'] == 'online_assign' %}
-            <input type="text" name="email_base_url" value="{{ campaign['email_base_url'] or railway_app_url or 'http://127.0.0.1:5055' }}" />
+            {% set default_base_url = railway_app_url or 'http://127.0.0.1:5055' %}
           {% else %}
-            <input type="text" name="email_base_url" value="{{ campaign['email_base_url'] or cloud_base_url or 'http://127.0.0.1:5055' }}" />
+            {% set default_base_url = cloud_base_url or 'http://127.0.0.1:5055' %}
           {% endif %}
-          <div class="muted" style="margin-top: 6px;">Links will be <code>{{ campaign['email_base_url'] or 'http://127.0.0.1:5055' }}/s/&lt;token&gt;</code></div>
+          {% set current_base_url = campaign['email_base_url'] if campaign['email_base_url'] else default_base_url %}
+          <input type="text" name="email_base_url" value="{{ current_base_url }}" />
+          <div class="muted" style="margin-top: 6px;">Links will be <code>{{ current_base_url }}/s/&lt;token&gt;</code></div>
         </div>
       </div>
       <div style="height: 10px;"></div>
