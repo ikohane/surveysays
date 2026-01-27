@@ -861,7 +861,9 @@ def register(app: Flask, db: Db) -> None:
                         }
                     )
 
-                if mode == "cloud" and cloud_admin_token:
+                # Only sync from Cloudflare for non-Railway campaigns
+                # online_assign campaigns use Railway, not Cloudflare
+                if mode == "cloud" and cloud_admin_token and campaign["picker_strategy"] != "online_assign":
                     try:
                         cloud_sync_status = maybe_sync_cloud_submissions(
                             conn=conn,

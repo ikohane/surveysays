@@ -218,6 +218,7 @@
     {% endif %}
   </div>
 
+  {% if campaign['picker_strategy'] != 'online_assign' %}
   <div class="card">
     <h3 style="margin-top:0;">Cloud mode sync (Cloudflare → local SQLite)</h3>
     {% if admin_mode != 'cloud' %}
@@ -262,7 +263,9 @@
       {% endif %}
     {% endif %}
   </div>
+  {% endif %}
 
+  {% if campaign['picker_strategy'] != 'online_assign' %}
   <div class="card">
     <h3 style="margin-top:0;">Cloudflare staging (push variants → get tokens)</h3>
     {% if not cloud_base_url %}
@@ -370,6 +373,7 @@
       </details>
     {% endif %}
   </div>
+  {% endif %}
 
   <div class="card">
     <h3 style="margin-top:0;">Email (Resend) settings</h3>
