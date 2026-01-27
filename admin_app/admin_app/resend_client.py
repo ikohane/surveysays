@@ -1,3 +1,24 @@
+"""
+Resend.com API client for sending survey invitation emails.
+
+Uses DIRECT EMAIL SENDING (not Resend templates):
+- Templates API requires paid Resend plan
+- Direct sending works with free/paid plans
+- Personalization done client-side before sending
+
+Requirements:
+- RESEND_API_KEY environment variable with "full access" or "sending access" permissions
+- Verified domain in Resend for sender email address
+- User-Agent header included (Resend blocks requests without it)
+
+Email Variables:
+The following variables are replaced in email HTML before sending:
+- {{{SURVEY_LINK}}} - Personalized survey link
+- {{{CAMPAIGN_TITLE}}} - Campaign name
+- {{{RECIPIENT_EMAIL}}} - Recipient's email
+- {{{RECIPIENT_FIRST_NAME}}} - Recipient's first name
+- {{{RECIPIENT_LAST_NAME}}} - Recipient's last name
+"""
 from __future__ import annotations
 
 import certifi

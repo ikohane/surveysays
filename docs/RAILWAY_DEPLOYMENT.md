@@ -88,10 +88,12 @@ In Railway project dashboard, go to **Variables** tab and add:
 
 | Variable Name | Value | Description |
 |--------------|-------|-------------|
-| `RESEND_API_KEY` | `re_xxxxx` | Your Resend.com API key for sending emails |
+| `RESEND_API_KEY` | `re_xxxxx` | Your Resend.com API key with **full access** permissions |
 | `RAILWAY_ADMIN_TOKEN` | `<generate>` | Admin token for API authentication (see below) |
 | `ADMIN_APP_SECRET` | `<generate>` | Flask session secret (see below) |
 | `ADMIN_MODE_DEFAULT` | `local` | Run in local mode (don't sync to Cloudflare) |
+
+**Important:** The `RESEND_API_KEY` must have **full access** or **sending access** permissions. Limited-permission keys will fail with 403 Forbidden errors.
 
 **Generate tokens locally:**
 ```bash
@@ -150,9 +152,10 @@ python3 -m admin_app.admin_app.app
    - Wait for success message
 
 4. **Send invitations:**
-   - Configure email settings
+   - Configure email settings (from email, subject, HTML body)
    - Email links will be: `https://your-app.railway.app/s/<token>`
-   - Click **"Send emails"**
+   - Click **"Send Emails"** in the Railway Deployment card
+   - **Note:** Uses direct email sending (not Resend templates)
 
 ### How It Works
 
@@ -210,6 +213,32 @@ Railway automatically:
 | `ADMIN_APP_SECRET` | Required | - | Flask session secret |
 | `ADMIN_MODE_DEFAULT` | Optional | `local` | Admin mode (use `local` for Railway) |
 
+## Email Sending
+
+### Email Configuration
+
+Railway campaigns use **direct email sending** (not Resend templates):
+
+1. **From Address:** Must be from a verified domain in Resend
+   - Example: `zak@study.hvp.global` (personal, not marketing)
+   - Avoid: `noreply@...` (looks like spam)
+
+2. **Email HTML:** Supports template variables:
+   - `{{{SURVEY_LINK}}}` - Personalized survey link
+   - `{{{CAMPAIGN_TITLE}}}` - Campaign name
+   - `{{{RECIPIENT_FIRST_NAME}}}` - Recipient's first name
+   - `{{{RECIPIENT_LAST_NAME}}}` - Recipient's last name
+   - `{{{RECIPIENT_EMAIL}}}` - Recipient's email
+
+3. **Testing Override:** All emails go to `kohane@gmail.com` during testing
+
+### Resend API Requirements
+
+- **API Key:** Must have "Full access" or "Sending access" permissions
+- **Domain Verification:** Your sending domain must be verified in Resend
+- **User-Agent:** Automatically included (Resend blocks requests without it)
+- **No Templates:** We use direct email API (templates require paid Resend plan)
+
 ## Troubleshooting
 
 ### Check Logs
@@ -240,6 +269,12 @@ View Railway logs to debug issues:
 - Verify question bank was pushed (check logs)
 - Ensure campaign strategy is `online_assign`
 - Check Railway logs for errors
+
+**Email sending fails with "403 Forbidden":**
+- Verify Resend API key has "Full access" or "Sending access" permissions
+- Check that sender domain is verified in Resend (https://resend.com/domains)
+- Ensure `from` email uses verified domain (e.g., `zak@study.hvp.global`)
+- Limited-permission API keys will fail even with verified domains
 
 ### Database Access
 

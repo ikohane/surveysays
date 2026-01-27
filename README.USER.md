@@ -204,8 +204,9 @@ Click on your campaign name to open the campaign page.
 
 1. Click **"Master View"** (navigation bar)
 2. Scroll to **"Email Configuration"**
-3. Edit the email template:
-   - **From Email**: Must match your verified Resend domain (e.g., `surveys@yourdomain.com`)
+3. Edit the email settings:
+   - **From Email**: Must match your verified Resend domain (e.g., `zak@study.hvp.global`)
+     - Use a personal email address (not `noreply@...`) to avoid spam filters
    - **Subject**: Email subject line (e.g., "You're invited to participate")
    - **Base URL**: 
      - Local Mode: `http://127.0.0.1:5055`
@@ -229,11 +230,11 @@ Click on your campaign name to open the campaign page.
 
 ⚠️ **Make sure you've configured Resend API key** (see Installation Step 2)
 
-1. On the Master View page, click **"Send Invitation Emails"**
+1. On the Master View page, click **"Send Invitation Emails"** (or **"Send Emails"** for Railway campaigns)
 2. The system will:
-   - Create/update your email template in Resend
-   - Send personalized emails to all recipients
+   - Send personalized emails directly to all recipients
    - Show progress (approximately 1 email per second)
+   - **Note:** Does not use Resend templates (uses direct email API)
 3. Check for any errors in the confirmation message
 
 ---
