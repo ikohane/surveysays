@@ -1,6 +1,57 @@
-# SurveySays - Survey Creation & Delivery System
+# SurveySays - User Guide
 
-**User Guide for Survey Administrators**
+**Complete guide for survey administrators**
+
+---
+
+## UI Modes: Basic vs Expert
+
+SurveySays offers two interface modes to match your experience level:
+
+### Basic Mode (Default)
+
+**For most users** - Simplified interface with clear workflows and friendly language.
+
+Features:
+- Guided step-by-step process
+- Simplified terminology ("Pre-assigned Questions" vs "Dynamic Assignment")
+- Smart defaults and auto-configuration
+- Essential features only
+- Live email preview
+- One-click cloud deployment
+
+**Perfect for:**
+- First-time users
+- Quick survey creation
+- Standard workflows
+- Users who prefer simplicity
+
+### Expert Mode
+
+**For power users** - Full access to all configuration options and technical details.
+
+Features:
+- All Basic mode features PLUS:
+- Direct YAML editing for email and layout
+- Manual picker strategy selection (pick_k_cases, online_assign, template_expand)
+- Template-based question generation
+- Wave management and generation history
+- Event logs with timestamps
+- Access to all database fields and technical settings
+
+**Perfect for:**
+- Experienced users
+- Complex survey requirements
+- Template-based generation
+- Debugging and development
+
+### Switching Modes
+
+Toggle between Basic and Expert mode using the switch in the top-right corner of any page.
+
+**Note:** This guide covers both modes. Sections marked "(Expert)" are only needed when using Expert mode.
+
+---
 
 ## What Can You Do With This System?
 
@@ -14,17 +65,21 @@ SurveySays helps you create, customize, and send surveys to recipients. You can:
 ✅ **Export results** for analysis  
 ✅ **Run multiple campaigns** simultaneously with different question sets
 
-### Two Delivery Modes
+### Survey Delivery Modes
+
+The system supports both local testing and cloud deployment:
 
 1. **Local Mode** (Testing)
    - Surveys hosted on your computer
    - Good for testing and small studies with trusted recipients
    - Recipients click links that point to your machine
+   - No cloud setup required
 
 2. **Cloud Mode** (Production)
-   - Surveys hosted on Cloudflare (professional hosting)
+   - Surveys hosted professionally (Cloudflare or Railway)
    - Good for large-scale studies and public recipients
-   - Recipients click links that point to your domain (e.g., https://study.yourdomain.com)
+   - Recipients click links that point to your domain
+   - Automatic in Basic mode - just click "Push to Cloud"
 
 ---
 
@@ -158,33 +213,41 @@ case_002,"A 30-year-old reports severe headaches...","Recommended treatment?","M
 
 1. On the home page, click **"Create New Campaign"**
 2. Fill in:
-   - **Campaign Key**: Short identifier (e.g., `study_2025_01`)
+   - **Campaign Name**: Short identifier (e.g., `study_2025_01`)
    - **Title**: Display name (e.g., "Clinical Case Study January 2025")
-   - **Seed**: Random number for reproducibility (e.g., `12345`)
-   - **Version**: Usually `1` for first campaign
+   - **Survey Type**: Choose between:
+     - **Pre-assigned Questions**: Generate questions before sending (most common)
+     - **Dynamic Assignment**: Assign questions when recipients open their link (advanced)
+   - **Questions per recipient**: How many questions each person gets (e.g., 2, 5, 10)
 3. Click **"Create Campaign"**
 
-### Step 4: Configure Campaign Settings
+**In Expert Mode:** You'll also see fields for Seed (random number) and Version (usually 1).
+
+### Step 4: Configure Your Survey
 
 Click on your campaign name to open the campaign page.
 
-#### **Choose Your Strategy:**
+#### **Understanding Survey Types:**
 
-**Pick K Cases** (Most Common)
-- Each recipient gets K randomly selected questions
-- Use this for: General surveys where order doesn't matter
-- Configuration: Set **K** = number of questions per recipient (e.g., 5)
+**Pre-assigned Questions** (Recommended for most users)
+- You generate personalized question sets before sending invitations
+- You can review what each recipient will see
+- Questions are fixed once generated
+- Works with Cloudflare hosting (free tier available)
+- **Best for:** Standard surveys, smaller studies, when you want to review questions first
 
-**Online Assign** (Advanced - Requires Railway)
-- Questions assigned when recipient opens their link
-- Use this for: Balancing question distribution, adaptive testing
-- Configuration: Set **K** = number of questions per recipient
-- **Deployment**: Requires Railway.app for production (see [Railway Deployment Guide](docs/RAILWAY_DEPLOYMENT.md))
+**Dynamic Assignment** (Advanced users)
+- Questions assigned automatically when each recipient opens their survey link
+- Ensures even distribution across all your questions
+- Uses load-balancing to prevent any question from being over-used
+- Requires Railway hosting (free tier available)
+- **Best for:** Large studies, optimal question distribution, preventing question fatigue
 
-**Template Expand** (Expert)
-- Questions generated from templates with variables
-- Use this for: Complex parameterized questions
-- Requires: Additional `templates.csv` and `param_vector.json` files
+**Template Expand** (Expert Mode Only)
+- Generate questions from templates with variable substitution
+- For complex parameterized questions
+- Requires additional `templates.csv` and `param_vector.json` files
+- See Expert Mode section below
 
 ### Step 5: Generate Surveys
 
