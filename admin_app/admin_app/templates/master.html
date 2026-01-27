@@ -515,26 +515,45 @@
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Invites ledger (all recipients)</h3>
+    <h3 style="margin-top:0;">{% if ui_mode == 'basic' %}Recipient Status{% else %}Invites ledger (all recipients){% endif %}</h3>
+    {% if ui_mode == 'basic' %}
+    <div class="muted">Track which recipients have received and completed their surveys.</div>
+    {% else %}
     <div class="muted">Scrollable view of each invite with statuses: invited/opened/assigned/submitted.</div>
+    {% endif %}
     <div style="height: 10px;"></div>
     <div style="max-height: 420px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 10px;">
       <table>
         <thead>
           <tr>
             <th>Email</th>
+            {% if ui_mode == 'basic' %}
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Sent</th>
+            <th>Opened</th>
+            <th>Submitted</th>
+            {% else %}
             <th>Invite</th>
             <th>Opened</th>
             <th>Assigned</th>
             <th>Submitted</th>
             <th>Token</th>
             <th>Link</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
           {% for r in ledger_rows %}
             <tr>
               <td><code>{{ r['email'] }}</code></td>
+              {% if ui_mode == 'basic' %}
+              <td>{{ r['firstname'] or '—' }}</td>
+              <td>{{ r['lastname'] or '—' }}</td>
+              <td>{% if r['invited_at'] %}✓{% else %}—{% endif %}</td>
+              <td>{% if r['opened_at'] %}✓{% else %}—{% endif %}</td>
+              <td>{% if r['submitted_at'] %}✓{% else %}—{% endif %}</td>
+              {% else %}
               <td>{% if r['invited_at'] %}yes{% else %}{% endif %}</td>
               <td>{% if r['opened_at'] %}yes{% else %}{% endif %}</td>
               <td>{% if r['questionnaire_hash'] %}yes{% else %}{% endif %}</td>
@@ -547,6 +566,7 @@
                   <a href="{{ url_for('respondent_open', token=r['token']) }}"><code>/s/{{ r['token'][:8] }}…</code></a>
                 {% endif %}
               </td>
+              {% endif %}
             </tr>
           {% endfor %}
         </tbody>
