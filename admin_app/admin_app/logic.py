@@ -436,3 +436,38 @@ def validate_answers_against_snapshot(*, qjson: dict[str, Any], answers: dict[st
             raise ValueError(f"Unsupported answerable block type '{btype}'")
 
 
+
+def format_error_for_ui_mode(error_msg: str, ui_mode: str = 'basic') -> str:
+    """
+    Convert technical error messages to user-friendly ones for Basic mode.
+    Expert mode gets the original technical message.
+    """
+    if ui_mode == 'expert':
+        return error_msg
+    
+    # Common error patterns and their friendly versions
+    friendly_messages = {
+        'No rows in recipients table': 'Please upload recipients first',
+        'No rows in cases table': 'Please upload questions (cases) first',
+        'campaign_id=': 'Campaign setup incomplete',
+        'Invalid email YAML': 'Please check your email settings',
+        'Invalid layout YAML': 'Please check your layout configuration',
+        'Cloud HTTP 404': 'Campaign not found on cloud server',
+        'Cloud HTTP 401': 'Authentication failed - please check your credentials',
+        'Cloud HTTP 403': 'Access denied - please verify your permissions',
+        'Cloud HTTP 500': 'Server error - please try again or contact support',
+        'sqlite3.Row': 'Database error - please contact support',
+        'Resend API error': 'Email service error',
+        'API key is invalid': 'Please check your Resend API key',
+        'Domain not verified': 'Please verify your sender domain in Resend',
+    }
+    
+    error_lower = error_msg.lower()
+    for pattern, friendly in friendly_messages.items():
+        if pattern.lower() in error_lower:
+            return f"{friendly}. (Switch to Expert Mode for technical details)"
+    
+    if len(error_msg) > 100:
+        return "An error occurred. Switch to Expert Mode to see technical details."
+    
+    return error_msg
