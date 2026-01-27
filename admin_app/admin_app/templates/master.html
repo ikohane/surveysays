@@ -87,6 +87,7 @@
   </div>
   {% endif %}
 
+  {% if ui_mode == 'expert' %}
   <div class="card">
     <h3 style="margin-top:0;">Variant Generation Waves</h3>
     <div class="muted">
@@ -153,7 +154,9 @@
       </a>
     {% endif %}
   </div>
+  {% endif %}
 
+  {% if ui_mode == 'expert' %}
   <div class="card">
     <h3 style="margin-top:0;">Invited / opened / assigned / submitted</h3>
     <div class="muted">This is computed from `invitations` + `submissions` for this campaign.</div>
@@ -180,7 +183,9 @@
       Invited-not-submitted: <strong>{{ cohort_counts.invited - cohort_counts.submitted }}</strong>
     </div>
   </div>
+  {% endif %}
 
+  {% if ui_mode == 'expert' %}
   <div class="card">
     <h3 style="margin-top:0;">Recent submissions</h3>
     <table>
@@ -217,8 +222,9 @@
       <div class="muted">No submissions yet for this campaign.</div>
     {% endif %}
   </div>
+  {% endif %}
 
-  {% if campaign['picker_strategy'] != 'online_assign' %}
+  {% if ui_mode == 'expert' and campaign['picker_strategy'] != 'online_assign' %}
   <div class="card">
     <h3 style="margin-top:0;">Cloud mode sync (Cloudflare → local SQLite)</h3>
     {% if admin_mode != 'cloud' %}
@@ -265,7 +271,7 @@
   </div>
   {% endif %}
 
-  {% if campaign['picker_strategy'] != 'online_assign' %}
+  {% if ui_mode == 'expert' and campaign['picker_strategy'] != 'online_assign' %}
   <div class="card">
     <h3 style="margin-top:0;">Cloudflare staging (push variants → get tokens)</h3>
     {% if not cloud_base_url %}
@@ -548,6 +554,7 @@
     </div>
   </div>
 
+  {% if ui_mode == 'expert' %}
   <div class="card">
     <h3 style="margin-top:0;">Event log</h3>
     <div class="muted">Recent user actions per campaign (success/failure). Each row shows the latest 25, most recent first.</div>
@@ -586,6 +593,7 @@
       {% endif %}
     </div>
   </div>
+  {% endif %}
 
   <div class="card">
     <h3 style="margin-top:0;">Railway Deployment (for online_assign)</h3>
@@ -633,6 +641,7 @@
     {% endif %}
   </div>
 
+  {% if ui_mode == 'expert' %}
   <div class="card">
     <h3 style="margin-top:0;">Layout (YAML)</h3>
     <div class="muted">
@@ -648,7 +657,9 @@
       Effective layoutConfig: <code>{{ layout_config | tojson }}</code>
     </div>
   </div>
+  {% endif %}
 
+  {% if ui_mode == 'expert' %}
   <div class="card">
     <h3 style="margin-top:0;">Email Settings (YAML)</h3>
     <div class="muted">
@@ -672,6 +683,7 @@
       Parsed config: from=<code>{{ email_config.from_email }}</code>, subject=<code>{{ email_config.subject }}</code>, base_url=<code>{{ email_config.base_url }}</code>
     </div>
   </div>
+  {% endif %}
 {% endblock %}
 
 
