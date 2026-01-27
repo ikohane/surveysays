@@ -578,18 +578,39 @@
     </div>
     <div style="height: 10px;"></div>
     
+    {% if campaign['picker_strategy'] == 'online_assign' %}
+      {% set push_count = inv_counts.total if inv_counts else 0 %}
+      {% set last_push_time = None %}
+    {% else %}
+      {% set push_count = cloud_latest_tokens|length %}
+      {% set last_push_time = cloud_last_upload['created_at'] if cloud_last_upload else None %}
+    {% endif %}
+    
+    {% if push_count > 0 %}
+    <div style="padding: 10px; background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; margin-bottom: 10px;">
+      <strong>✓ Deployed:</strong> {{ push_count }} recipient{{ 's' if push_count != 1 else '' }} ready to receive surveys
+      {% if last_push_time %}
+        <span class="muted"> · Last push: {{ last_push_time|edt }}</span>
+      {% endif %}
+    </div>
+    {% else %}
+    <div style="padding: 10px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; margin-bottom: 10px;">
+      <strong>⚠️ Not deployed yet</strong> - Click "Push to Cloud" below to deploy
+    </div>
+    {% endif %}
+    
     <div class="actions">
       <form action="{{ url_for('push_to_cloud', campaign_key=campaign['campaign_key']) }}" method="post" style="display: inline-block; margin-right: 10px;">
-        <button type="submit">Push to Cloud</button>
+        <button type="submit">{{ 'Push to Cloud Again' if push_count > 0 else 'Push to Cloud' }}</button>
       </form>
       
       {% if campaign['picker_strategy'] == 'online_assign' %}
       <form action="{{ url_for('railway_send_emails', campaign_key=campaign['campaign_key']) }}" method="post" style="display: inline-block;">
-        <button type="submit">Send Emails</button>
+        <button type="submit" {% if push_count == 0 %}disabled title="Push to cloud first"{% endif %}>Send Emails</button>
       </form>
       {% else %}
       <form action="{{ url_for('send_emails', campaign_key=campaign['campaign_key']) }}" method="post" style="display: inline-block;">
-        <button type="submit">Send Emails</button>
+        <button type="submit" {% if push_count == 0 %}disabled title="Push to cloud first"{% endif %}>Send Emails</button>
       </form>
       {% endif %}
     </div>
