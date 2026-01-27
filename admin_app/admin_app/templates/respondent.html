@@ -19,27 +19,18 @@
   </style>
 
   <div class="card">
-    <h2 style="margin:0 0 6px 0;">Respondent view (simulated)</h2>
+    <h2 style="margin:0 0 6px 0;">{{ campaign['title'] if campaign['title'] else campaign['campaign_key'] }}</h2>
     <div class="muted">
-      Campaign: {{ campaign['campaign_key'] }} · Recipient: {{ email }} · Token: <code>{{ token }}</code>
-    </div>
-    <div class="muted" style="margin-top: 6px;">
-      First open assigns and snapshots the questionnaire; subsequent opens return the same snapshot.
+      Please answer the following questions.
     </div>
   </div>
 
   <div class="card">
-    <h3 style="margin-top:0;">Rendered</h3>
     <form id="form" method="post" action="{{ url_for('respondent_submit', token=token) }}">
       <div id="blocks"></div>
       <div style="height: 12px;"></div>
       <button type="submit">Submit</button>
     </form>
-  </div>
-
-  <div class="card">
-    <h3 style="margin-top:0;">Questionnaire JSON (snapshotted)</h3>
-    <pre>{{ qjson | tojson(indent=2) }}</pre>
   </div>
 
   <script>
