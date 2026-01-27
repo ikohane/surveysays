@@ -2052,10 +2052,21 @@ def register(app: Flask, db: Db) -> None:
                 flash("No Railway tokens found. Click 'Push to Railway' first.", "error")
                 return redirect(url_for("master_view", campaign_key=campaign_key))
             
-            # Get email settings
-            email_from = str(campaign.get("email_from") if "email_from" in campaign and campaign["email_from"] else "")
-            email_subject = str(campaign.get("email_subject") if "email_subject" in campaign and campaign["email_subject"] else "")
-            email_html = str(campaign.get("email_html") if "email_html" in campaign and campaign["email_html"] else "")
+            # Get email settings with safe fallbacks (sqlite3.Row doesn't have .get())
+            try:
+                email_from = str(campaign["email_from"]) if campaign["email_from"] else ""
+            except (KeyError, TypeError):
+                email_from = ""
+            
+            try:
+                email_subject = str(campaign["email_subject"]) if campaign["email_subject"] else ""
+            except (KeyError, TypeError):
+                email_subject = ""
+            
+            try:
+                email_html = str(campaign["email_html"]) if campaign["email_html"] else ""
+            except (KeyError, TypeError):
+                email_html = ""
             
             if not email_from or not email_subject or not email_html:
                 flash("Missing email settings. Configure in Master → Email Settings.", "error")
@@ -2063,7 +2074,10 @@ def register(app: Flask, db: Db) -> None:
             
             # Create or update Resend template
             try:
-                template_id = str(campaign.get("email_template_id") if "email_template_id" in campaign else "")
+                try:
+                    template_id = str(campaign["email_template_id"]) if campaign["email_template_id"] else ""
+                except (KeyError, TypeError):
+                    template_id = ""
                 template_id = create_or_update_campaign_template(
                     campaign_key=campaign_key,
                     template_id=template_id if template_id else None,
@@ -2113,6 +2127,14 @@ def register(app: Flask, db: Db) -> None:
                 fresh_campaign = get_campaign_by_key(log_conn, campaign_key=campaign_key)
                 if fresh_campaign:
                     log_event(log_conn, campaign=fresh_campaign, event="railway_send_emails", success=False, message=str(e))
+                    log_conn.commit()
+            return redirect(url_for("master_view", campaign_key=campaign_key))
+        except Exception as e:
+            flash(f"Unexpected error sending emails: {e}", "error")
+            with db.connect() as log_conn:
+                fresh_campaign = get_campaign_by_key(log_conn, campaign_key=campaign_key)
+                if fresh_campaign:
+                    log_event(log_conn, campaign=fresh_campaign, event="railway_send_emails", success=False, message=f"Unexpected: {e}")
                     log_conn.commit()
             return redirect(url_for("master_view", campaign_key=campaign_key))
         
