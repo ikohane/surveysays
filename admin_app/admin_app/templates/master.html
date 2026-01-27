@@ -731,10 +731,12 @@
       {% endif %}
     </div>
     
+    {% if email_testing_override %}
     <div style="height: 10px;"></div>
     <div class="muted" style="padding: 10px; background: #dcfce7; border-radius: 6px;">
-      📧 <strong>Testing Mode:</strong> All emails redirect to <code>kohane@gmail.com</code>
+      📧 <strong>Testing Mode:</strong> All emails redirect to <code>{{ email_testing_override }}</code>
     </div>
+    {% endif %}
     
     <div style="height: 10px;"></div>
     <div class="muted">
@@ -873,10 +875,12 @@
           <button type="submit">Send Emails</button>
         </form>
       </div>
+      {% if email_testing_override %}
       <div style="height: 10px;"></div>
       <div class="muted" style="padding: 10px; background: #dcfce7; border-radius: 6px; margin-bottom: 10px;">
-        📧 <strong>Testing Mode:</strong> All emails redirect to <code>kohane@gmail.com</code> with correct survey links for each recipient.
+        📧 <strong>Testing Mode:</strong> All emails redirect to <code>{{ email_testing_override }}</code> with correct survey links for each recipient.
       </div>
+      {% endif %}
       <div class="muted">
         <strong>Push to Railway</strong> will:
         <ul style="margin: 6px 0; padding-left: 20px;">

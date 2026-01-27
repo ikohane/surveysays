@@ -934,6 +934,7 @@ def register(app: Flask, db: Db) -> None:
             recipients_with_variants=recipients_with_variants,
             pending_recipients=pending_recipients,
             ui_mode=get_ui_mode(),
+            email_testing_override=(os.environ.get("EMAIL_TESTING_OVERRIDE") or "").strip() or None,
         )
 
     @app.post("/campaigns/<campaign_key>/cloud/sync")
@@ -1226,6 +1227,9 @@ def register(app: Flask, db: Db) -> None:
 
     @app.post("/campaigns/<campaign_key>/send-emails")
     def send_emails(campaign_key: str) -> Response:
+        # Global testing override from environment variable
+        EMAIL_TESTING_OVERRIDE = (os.environ.get("EMAIL_TESTING_OVERRIDE") or "").strip() or None
+        
         with db.connect() as conn:
             campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
             if campaign is None:
@@ -1374,13 +1378,17 @@ def register(app: Flask, db: Db) -> None:
                     }
                     for r in inv_rows
                 ],
+                email_override=EMAIL_TESTING_OVERRIDE,
             )
         except ResendError as e:
             _log_send_result(success=False, message=f"Resend send error: {e}")
             flash(f"Resend send error: {e}", "error")
             return redirect(url_for("master_view", campaign_key=campaign_key))
 
-        flash(f"Sent {len(sends)} invitation emails.", "success")
+        if EMAIL_TESTING_OVERRIDE:
+            flash(f"✅ Sent {len(sends)} invitation emails to {EMAIL_TESTING_OVERRIDE} (testing mode). Each email contains the correct survey link for the intended recipient.", "success")
+        else:
+            flash(f"Sent {len(sends)} invitation emails.", "success")
         _log_send_result(success=True, message=f"Sent {len(sends)} messages")
         return redirect(url_for("master_view", campaign_key=campaign_key))
 
@@ -2084,9 +2092,10 @@ def register(app: Flask, db: Db) -> None:
     def railway_send_emails(campaign_key: str) -> Response:
         """
         Send Railway survey invitation emails.
-        For testing: ALL emails redirect to kohane@gmail.com
+        Respects EMAIL_TESTING_OVERRIDE environment variable for testing.
         """
-        EMAIL_TESTING_OVERRIDE = "kohane@gmail.com"
+        # Global testing override from environment variable
+        EMAIL_TESTING_OVERRIDE = (os.environ.get("EMAIL_TESTING_OVERRIDE") or "").strip() or None
         
         railway_base_url, railway_admin_token = get_railway_config()
         if not railway_base_url or not railway_admin_token:
@@ -2204,11 +2213,14 @@ def register(app: Flask, db: Db) -> None:
                 )
                 log_conn.commit()
         
-        flash(
-            f"✅ Sent {len(sends)} Railway invitation emails to {EMAIL_TESTING_OVERRIDE} (testing mode). "
-            f"Each email contains the correct survey link for the intended recipient.",
-            "success",
-        )
+        if EMAIL_TESTING_OVERRIDE:
+            flash(
+                f"✅ Sent {len(sends)} Railway invitation emails to {EMAIL_TESTING_OVERRIDE} (testing mode). "
+                f"Each email contains the correct survey link for the intended recipient.",
+                "success",
+            )
+        else:
+            flash(f"✅ Sent {len(sends)} Railway invitation emails.", "success")
         return redirect(url_for("master_view", campaign_key=campaign_key))
 
 
