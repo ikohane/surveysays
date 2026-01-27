@@ -103,6 +103,7 @@ def _request_json(*, method: str, path: str, body: dict[str, Any] | None) -> dic
     req = urllib.request.Request(url, data=data, method=method.upper())
     req.add_header("Authorization", f"Bearer {api_key}")
     req.add_header("Content-Type", "application/json")
+    req.add_header("User-Agent", "SurveySays/1.0")
     try:
         try:
             cafile = certifi.where()
