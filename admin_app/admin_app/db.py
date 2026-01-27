@@ -2017,6 +2017,46 @@ def list_cloud_tokens_for_push(conn: sqlite3.Connection, *, push_id: int) -> lis
     )
 
 
+def list_cloud_invitation_tokens(
+    conn: sqlite3.Connection,
+    *,
+    campaign_id: int,
+    cloud_base_url: str,
+) -> list[sqlite3.Row]:
+    """
+    Get all cloud invitation tokens for a campaign and cloud base URL.
+    Returns most recent tokens (from latest push).
+    """
+    # Get the most recent push for this campaign/cloud_base_url
+    latest_push = conn.execute(
+        """
+        SELECT id
+        FROM cloud_pushes
+        WHERE campaign_id = ? AND cloud_base_url = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+        """,
+        (campaign_id, cloud_base_url),
+    ).fetchone()
+    
+    if not latest_push:
+        return []
+    
+    push_id = int(latest_push["id"])
+    
+    return list(
+        conn.execute(
+            """
+            SELECT email, cloud_token, uploaded_at, push_id
+            FROM cloud_invitation_tokens
+            WHERE push_id = ?
+            ORDER BY email
+            """,
+            (push_id,),
+        ).fetchall()
+    )
+
+
 def list_cloud_latest_tokens(
     conn: sqlite3.Connection,
     *,

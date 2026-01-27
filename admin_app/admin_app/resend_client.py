@@ -250,9 +250,16 @@ def send_invites_for_campaign(
     base_url: str,
     invitations: list[dict[str, Any]],
     max_per_second: float = 0.8,
+    email_override: str | None = None,
 ) -> list[dict[str, Any]]:
     """
     Send invitation emails to recipients using a Resend template.
+    
+    Args:
+        email_override: If set, all emails will be sent to this address instead of
+                       the intended recipient. Useful for testing. The intended
+                       recipient's email, name, and survey link are still included
+                       in the email variables.
     """
     results: list[dict[str, Any]] = []
     min_interval = 1.0 / max(max_per_second, 0.1)
@@ -263,6 +270,9 @@ def send_invites_for_campaign(
         first_name = str(inv.get("first_name") or "")
         last_name = str(inv.get("last_name") or "")
         survey_link = base_url.rstrip("/") + f"/s/{token}"
+        
+        # Use override email for actual delivery, but keep intended email in variables
+        actual_to_email = email_override if email_override else intended_email
 
         now = time.monotonic()
         if now - last < min_interval:
@@ -274,7 +284,7 @@ def send_invites_for_campaign(
             attempt += 1
             try:
                 resp = send_email_with_template(
-                    to_email=intended_email,
+                    to_email=actual_to_email,
                     template_id=template_id,
                     variables={
                         "SURVEY_LINK": survey_link,
@@ -293,7 +303,12 @@ def send_invites_for_campaign(
                     time.sleep(backoff)
                     continue
                 raise
-        results.append({"intended_email": intended_email, "token": token, "resend_response": resp})
+        results.append({
+            "intended_email": intended_email,
+            "actual_to_email": actual_to_email,
+            "token": token,
+            "resend_response": resp,
+        })
     return results
 
 

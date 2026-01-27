@@ -578,13 +578,19 @@
       </div>
       <div style="height: 10px;"></div>
       <div class="actions">
-        <form action="{{ url_for('railway_push', campaign_key=campaign['campaign_key']) }}" method="post">
+        <form action="{{ url_for('railway_push', campaign_key=campaign['campaign_key']) }}" method="post" style="display: inline-block; margin-right: 10px;">
           <button type="submit">Push to Railway</button>
+        </form>
+        <form action="{{ url_for('railway_send_emails', campaign_key=campaign['campaign_key']) }}" method="post" style="display: inline-block;">
+          <button type="submit">Send Emails</button>
         </form>
       </div>
       <div style="height: 10px;"></div>
+      <div class="muted" style="padding: 10px; background: #dcfce7; border-radius: 6px; margin-bottom: 10px;">
+        📧 <strong>Testing Mode:</strong> All emails redirect to <code>kohane@gmail.com</code> with correct survey links for each recipient.
+      </div>
       <div class="muted">
-        This will:
+        <strong>Push to Railway</strong> will:
         <ul style="margin: 6px 0; padding-left: 20px;">
           <li>Upload all question items from local database</li>
           <li>Create campaign and invitations on Railway</li>

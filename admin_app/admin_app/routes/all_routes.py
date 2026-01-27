@@ -2015,4 +2015,123 @@ def register(app: Flask, db: Db) -> None:
         
         return redirect(url_for("master_view", campaign_key=campaign_key))
 
+    @app.post("/campaigns/<campaign_key>/railway/send-emails")
+    def railway_send_emails(campaign_key: str) -> Response:
+        """
+        Send Railway survey invitation emails.
+        For testing: ALL emails redirect to kohane@gmail.com
+        """
+        EMAIL_TESTING_OVERRIDE = "kohane@gmail.com"
+        
+        railway_base_url, railway_admin_token = get_railway_config()
+        if not railway_base_url or not railway_admin_token:
+            flash("Missing env vars: RAILWAY_APP_URL and RAILWAY_ADMIN_TOKEN are required.", "error")
+            return redirect(url_for("master_view", campaign_key=campaign_key))
+        
+        with db.connect() as conn:
+            campaign = get_campaign_by_key(conn, campaign_key=campaign_key)
+            if campaign is None:
+                flash("Campaign not found", "error")
+                return redirect(url_for("home"))
+            
+            if campaign["picker_strategy"] != "online_assign":
+                flash("Railway emails are only for online_assign campaigns.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+            
+            campaign_id = int(campaign["id"])
+            
+            # Get Railway cloud tokens
+            cloud_tokens = list_cloud_invitation_tokens(
+                conn,
+                campaign_id=campaign_id,
+                cloud_base_url=railway_base_url,
+            )
+            
+            if not cloud_tokens:
+                flash("No Railway tokens found. Click 'Push to Railway' first.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+            
+            # Get email settings
+            email_from = str(campaign.get("email_from") if "email_from" in campaign and campaign["email_from"] else "")
+            email_subject = str(campaign.get("email_subject") if "email_subject" in campaign and campaign["email_subject"] else "")
+            email_html = str(campaign.get("email_html") if "email_html" in campaign and campaign["email_html"] else "")
+            
+            if not email_from or not email_subject or not email_html:
+                flash("Missing email settings. Configure in Master → Email Settings.", "error")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+            
+            # Create or update Resend template
+            try:
+                template_id = str(campaign.get("email_template_id") if "email_template_id" in campaign else "")
+                template_id = create_or_update_campaign_template(
+                    campaign_key=campaign_key,
+                    template_id=template_id if template_id else None,
+                    from_email=email_from,
+                    subject=email_subject,
+                    html=email_html,
+                )
+            except ResendError as e:
+                flash(f"Resend error creating/updating template: {e}", "error")
+                log_event(conn, campaign=campaign, event="railway_send_emails", success=False, message=f"Template error: {e}")
+                return redirect(url_for("master_view", campaign_key=campaign_key))
+            
+            # Save template ID
+            conn.execute(
+                "UPDATE campaigns SET email_template_id = ? WHERE campaign_key = ?",
+                (template_id, campaign_key),
+            )
+            conn.commit()
+            
+            # Get recipient names
+            name_map = recipient_name_map(conn, emails=[str(t["email"]) for t in cloud_tokens])
+            
+            # Prepare invitation list
+            invitations = []
+            for t in cloud_tokens:
+                email = str(t["email"])
+                names = name_map.get(email) or {}
+                invitations.append({
+                    "email": email,
+                    "token": str(t["cloud_token"]),
+                    "first_name": names.get("firstname", ""),
+                    "last_name": names.get("lastname", ""),
+                })
+        
+        # Send emails (with testing override)
+        try:
+            sends = send_invites_for_campaign(
+                template_id=template_id,
+                campaign_title=str(campaign["title"]),
+                base_url=railway_base_url,
+                invitations=invitations,
+                email_override=EMAIL_TESTING_OVERRIDE,  # ALL emails go to kohane@gmail.com
+            )
+        except ResendError as e:
+            flash(f"Resend send error: {e}", "error")
+            with db.connect() as log_conn:
+                fresh_campaign = get_campaign_by_key(log_conn, campaign_key=campaign_key)
+                if fresh_campaign:
+                    log_event(log_conn, campaign=fresh_campaign, event="railway_send_emails", success=False, message=str(e))
+                    log_conn.commit()
+            return redirect(url_for("master_view", campaign_key=campaign_key))
+        
+        with db.connect() as log_conn:
+            fresh_campaign = get_campaign_by_key(log_conn, campaign_key=campaign_key)
+            if fresh_campaign:
+                log_event(
+                    log_conn,
+                    campaign=fresh_campaign,
+                    event="railway_send_emails",
+                    success=True,
+                    message=f"Sent {len(sends)} emails to {EMAIL_TESTING_OVERRIDE} (testing override)",
+                )
+                log_conn.commit()
+        
+        flash(
+            f"✅ Sent {len(sends)} Railway invitation emails to {EMAIL_TESTING_OVERRIDE} (testing mode). "
+            f"Each email contains the correct survey link for the intended recipient.",
+            "success",
+        )
+        return redirect(url_for("master_view", campaign_key=campaign_key))
+
 
