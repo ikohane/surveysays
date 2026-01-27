@@ -47,6 +47,7 @@
     </div>
   </div>
 
+  {% if ui_mode == 'expert' %}
   <div class="card">
     <h3 style="margin-top:0;">Picker configuration</h3>
     <div class="muted">
@@ -89,9 +90,20 @@
       <div class="muted" style="margin-top: 8px;">param_vector.json not set.</div>
     {% endif %}
   </div>
+  {% endif %}
 
   <div class="card">
     <h3 style="margin-top:0;">Next Steps</h3>
+    {% if ui_mode == 'basic' %}
+    <div class="muted">
+      Your survey is ready! Go to the Master page to:
+    </div>
+    <ul style="margin: 10px 0 0 20px;">
+      <li>Upload your questions and recipients</li>
+      <li>Configure email settings</li>
+      <li>Push to cloud and send invitations</li>
+    </ul>
+    {% else %}
     <div class="muted">
       Go to the <strong>Master page</strong> to:
     </div>
@@ -101,6 +113,7 @@
       <li>Configure and send invitation emails</li>
       <li>Monitor submissions and results</li>
     </ul>
+    {% endif %}
     <div style="height: 10px;"></div>
     <a href="{{ url_for('master_view', campaign_key=campaign['campaign_key']) }}">
       <button type="button">Go to Master Page</button>

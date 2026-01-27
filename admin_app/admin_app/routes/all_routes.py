@@ -235,6 +235,7 @@ def register(app: Flask, db: Db) -> None:
             templates_count=len(templates),
             counts=counts,
             inv_counts=inv_counts,
+            ui_mode=get_ui_mode(),
         )
 
     @app.post("/campaigns/<campaign_key>/settings")
