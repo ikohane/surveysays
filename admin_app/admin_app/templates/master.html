@@ -524,7 +524,7 @@
       </div>
       <div style="height: 8px;"></div>
       <details style="margin-bottom: 8px;">
-        <summary style="cursor: pointer; font-size: 13px; color: #6b7280;">Example template (click to expand)</summary>
+        <summary style="cursor: pointer; font-size: 13px; color: #6b7280;">Example: Simple HTML (click to expand)</summary>
         <pre style="background: #f3f4f6; padding: 10px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin-top: 6px;">{% raw %}&lt;p&gt;Dear {{{RECIPIENT_FIRST_NAME}}},&lt;/p&gt;
 
 &lt;p&gt;You are invited to participate in our study: &lt;strong&gt;{{{CAMPAIGN_TITLE}}}&lt;/strong&gt;.&lt;/p&gt;
@@ -536,17 +536,78 @@
 
 &lt;p&gt;Thank you for your participation.&lt;/p&gt;{% endraw %}</pre>
       </details>
+      <details style="margin-bottom: 8px;">
+        <summary style="cursor: pointer; font-size: 13px; color: #6b7280;">Example: Styled with CSS (click to expand)</summary>
+        <pre style="background: #f3f4f6; padding: 10px; border-radius: 6px; font-size: 11px; overflow-x: auto; margin-top: 6px; max-height: 400px;">{% raw %}&lt;div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6;"&gt;
+  &lt;div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0;"&gt;
+    &lt;h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;"&gt;Research Study Invitation&lt;/h1&gt;
+  &lt;/div&gt;
+  
+  &lt;div style="background: #ffffff; padding: 40px 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;"&gt;
+    &lt;p style="font-size: 16px; color: #374151; margin: 0 0 20px 0;"&gt;
+      Dear &lt;strong&gt;{{{RECIPIENT_FIRST_NAME}}}&lt;/strong&gt;,
+    &lt;/p&gt;
+    
+    &lt;p style="font-size: 16px; color: #374151; margin: 0 0 30px 0;"&gt;
+      You have been selected to participate in our research study: &lt;strong style="color: #667eea;"&gt;{{{CAMPAIGN_TITLE}}}&lt;/strong&gt;.
+    &lt;/p&gt;
+    
+    &lt;div style="text-align: center; margin: 30px 0;"&gt;
+      &lt;a href="{{{SURVEY_LINK}}}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);"&gt;
+        Begin Survey
+      &lt;/a&gt;
+    &lt;/div&gt;
+    
+    &lt;div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 16px 20px; margin: 30px 0; border-radius: 4px;"&gt;
+      &lt;p style="font-size: 14px; color: #6b7280; margin: 0; line-height: 1.5;"&gt;
+        &lt;strong style="color: #374151;"&gt;Trouble with the button?&lt;/strong&gt;&lt;br&gt;
+        Copy and paste this link into your browser:&lt;br&gt;
+        &lt;span style="color: #667eea; word-break: break-all;"&gt;{{{SURVEY_LINK}}}&lt;/span&gt;
+      &lt;/p&gt;
+    &lt;/div&gt;
+    
+    &lt;p style="font-size: 14px; color: #6b7280; margin: 30px 0 0 0; line-height: 1.5;"&gt;
+      Thank you for your participation.&lt;br&gt;
+      &lt;em style="color: #9ca3af;"&gt;Research Team&lt;/em&gt;
+    &lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;{% endraw %}</pre>
+      </details>
       {% if ui_mode == 'basic' and not campaign['email_html'] %}
-      <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{% raw %}<p>Dear {{{RECIPIENT_FIRST_NAME}}},</p>
-
-<p>You are invited to participate in our study: <strong>{{{CAMPAIGN_TITLE}}}</strong>.</p>
-
-<p><a href="{{{SURVEY_LINK}}}">Click here to begin the survey</a></p>
-
-<p>Or copy and paste this link into your browser:<br/>
-{{{SURVEY_LINK}}}</p>
-
-<p>Thank you for your participation.</p>{% endraw %}</textarea>
+      <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{% raw %}<div style="max-width: 600px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Research Study Invitation</h1>
+  </div>
+  
+  <div style="background: #ffffff; padding: 40px 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+    <p style="font-size: 16px; color: #374151; margin: 0 0 20px 0;">
+      Dear <strong>{{{RECIPIENT_FIRST_NAME}}}</strong>,
+    </p>
+    
+    <p style="font-size: 16px; color: #374151; margin: 0 0 30px 0;">
+      You have been selected to participate in our research study: <strong style="color: #667eea;">{{{CAMPAIGN_TITLE}}}</strong>.
+    </p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="{{{SURVEY_LINK}}}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);">
+        Begin Survey
+      </a>
+    </div>
+    
+    <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 16px 20px; margin: 30px 0; border-radius: 4px;">
+      <p style="font-size: 14px; color: #6b7280; margin: 0; line-height: 1.5;">
+        <strong style="color: #374151;">Trouble with the button?</strong><br>
+        Copy and paste this link into your browser:<br>
+        <span style="color: #667eea; word-break: break-all;">{{{SURVEY_LINK}}}</span>
+      </p>
+    </div>
+    
+    <p style="font-size: 14px; color: #6b7280; margin: 30px 0 0 0; line-height: 1.5;">
+      Thank you for your participation.<br>
+      <em style="color: #9ca3af;">Research Team</em>
+    </p>
+  </div>
+</div>{% endraw %}</textarea>
       {% else %}
       <textarea name="email_html" style="width:100%; min-height: 180px; padding:10px; border: 1px solid #d1d5db; border-radius: 8px;">{{ campaign['email_html'] or '' }}</textarea>
       {% endif %}
