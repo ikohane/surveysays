@@ -65,7 +65,7 @@
           <select name="picker_strategy">
             <option value="pick_k_cases" {% if campaign['picker_strategy'] == 'pick_k_cases' %}selected{% endif %}>pick_k_cases</option>
             <option value="template_expand" {% if campaign['picker_strategy'] == 'template_expand' %}selected{% endif %}>template_expand</option>
-            <option value="online_assign" {% if campaign['picker_strategy'] == 'online_assign' %}selected{% endif %}>online_assign</option>
+            <option value="online_assign" {% if campaign['picker_strategy'] == 'online_assign' %}selected{% endif %}>Dynamic Assignment (online_assign)</option>
           </select>
         </div>
         <div>

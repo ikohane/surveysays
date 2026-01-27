@@ -87,11 +87,11 @@
           <select name="picker_strategy" required>
             {% if ui_mode == 'basic' %}
             <option value="pick_k_cases">Fixed Questions (everyone gets same questions)</option>
-            <option value="online_assign">Balanced Distribution (assigns questions fairly)</option>
+            <option value="online_assign">Dynamic Assignment (assigns questions when opened)</option>
             <option value="template_expand">Template-Based (advanced)</option>
             {% else %}
             <option value="pick_k_cases">pick_k_cases</option>
-            <option value="online_assign">online_assign</option>
+            <option value="online_assign">Dynamic Assignment (online_assign)</option>
             <option value="template_expand">template_expand</option>
             {% endif %}
           </select>
@@ -132,7 +132,7 @@
               <td>{{ c['title'] }}</td>
               <td>
                 {% if c['picker_strategy'] == 'pick_k_cases' %}Fixed Questions
-                {% elif c['picker_strategy'] == 'online_assign' %}Balanced
+                {% elif c['picker_strategy'] == 'online_assign' %}Dynamic Assignment
                 {% else %}Template
                 {% endif %}
               </td>
