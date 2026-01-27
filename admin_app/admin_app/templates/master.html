@@ -416,14 +416,21 @@
       <div style="height: 10px;"></div>
       <button class="secondary" type="submit">Save email settings</button>
     </form>
-    <div style="height: 10px;"></div>
-    <form action="{{ url_for('send_emails', campaign_key=campaign['campaign_key']) }}" method="post">
-      <button type="submit">Send invitation emails</button>
-    </form>
-    <div style="height: 10px;"></div>
-    <a href="{{ url_for('email_preview', campaign_key=campaign['campaign_key']) }}">
-      <button class="secondary" type="button">Dry-run preview (no send)</button>
-    </a>
+    {% if campaign['picker_strategy'] != 'online_assign' %}
+      <div style="height: 10px;"></div>
+      <form action="{{ url_for('send_emails', campaign_key=campaign['campaign_key']) }}" method="post">
+        <button type="submit">Send invitation emails (Cloudflare/Local)</button>
+      </form>
+      <div style="height: 10px;"></div>
+      <a href="{{ url_for('email_preview', campaign_key=campaign['campaign_key']) }}">
+        <button class="secondary" type="button">Dry-run preview (no send)</button>
+      </a>
+    {% else %}
+      <div style="height: 10px;"></div>
+      <div class="muted" style="padding: 10px; background: #fef3c7; border-radius: 6px;">
+        ℹ️ <strong>For online_assign campaigns:</strong> Use the "Send Emails" button in the <strong>Railway Deployment</strong> section below instead.
+      </div>
+    {% endif %}
   </div>
 
   <div class="card">
