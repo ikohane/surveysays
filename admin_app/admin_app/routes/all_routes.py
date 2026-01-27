@@ -1939,6 +1939,17 @@ def register(app: Flask, db: Db) -> None:
             # Step 3: Push campaign metadata FIRST (creates campaign on Railway)
             # This must happen before pushing question bank, since question bank requires campaign to exist
             try:
+                # Extract campaign fields with safe fallbacks (sqlite3.Row doesn't have .get())
+                try:
+                    k_val = int(campaign["k"]) if campaign["k"] is not None else 1
+                except (KeyError, TypeError, ValueError):
+                    k_val = 1
+                
+                try:
+                    layout_yaml_val = campaign["layout_yaml"] or ""
+                except (KeyError, TypeError):
+                    layout_yaml_val = ""
+                
                 resp_campaign = cloud_post_json(
                     url=f"{railway_base_url}/api/railway/sync_campaign",
                     bearer_token=railway_admin_token,
@@ -1948,8 +1959,8 @@ def register(app: Flask, db: Db) -> None:
                         "seed": int(campaign["seed"]),
                         "questionnaireVersion": int(campaign["questionnaire_version"]),
                         "pickerStrategy": campaign["picker_strategy"],
-                        "k": int(campaign.get("k", 1)),
-                        "layoutYaml": campaign.get("layout_yaml", ""),
+                        "k": k_val,
+                        "layoutYaml": layout_yaml_val,
                         "recipients": recipients_payload,
                     },
                 )
