@@ -120,6 +120,7 @@ Successfully implemented a dual-mode interface system allowing users to toggle b
 | `routes/all_routes.py` | Added toggle route, get_ui_mode(), ui_mode to contexts, skip Cloudflare sync for online_assign, smart push_to_cloud routing, updated update_email_yaml |
 | `templates/base.html` | Added mode toggle button in header |
 | `templates/home.html` | Conditional rendering for Basic vs Expert, simplified forms and labels |
+| `templates/campaign.html` | Hide picker configuration card in Basic mode, simplified Next Steps |
 | `templates/master.html` | Wrapped expert cards in conditionals, added workflow guide, simplified navigation, updated ledger table |
 | `db.py` | Added firstname/lastname to ledger queries using json_extract |
 | `logic.py` | Added format_error_for_ui_mode() function |
@@ -133,6 +134,10 @@ Successfully implemented a dual-mode interface system allowing users to toggle b
 4. `980ab12` - Hide expert-only cards in Basic mode
 5. `eb1a8af` - Simplify Invites Ledger for Basic mode
 6. `74149e7` - Add format_error_for_ui_mode function for friendly errors
+7. `599f4b1` - Add comprehensive implementation summary
+8. `6e459af` - Clean up temporary development scripts
+9. `420b41e` - Add comprehensive testing results documentation
+10. `1c6ff29` - Add Basic/Expert mode support to Campaign configuration page
 
 ## Usage
 
